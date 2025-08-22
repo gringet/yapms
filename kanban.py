@@ -5,6 +5,9 @@ import database
 # Define the columns for the Kanban board
 COLUMNS = ['To Do', 'In Progress', 'Done']
 
+# Common styling for dialog titles to ensure consistency.
+DIALOG_TITLE_CLASSES = 'text-h6'
+
 class KanbanState:
     """A state object to hold the tasks for the Kanban board."""
     def __init__(self):
@@ -50,13 +53,42 @@ def add_new_task(title: str, content: str, duration: int):
     else:
         ui.notify("Title is required.", color='negative')
 
+def update_task_details(task_id: int, title: str, content: str, duration: int):
+    """Updates the details of an existing task."""
+    if title:
+        database.update_task_details(task_id, title, content, duration)
+        ui.notify(f"Updated task '{title}'")
+        refresh_all_boards()
+    else:
+        ui.notify("Title is required.", color='negative')
+
+def open_edit_task_dialog(task_id: int):
+    """Opens a dialog for editing an existing task."""
+    task = database.get_task(task_id)
+    if not task:
+        ui.notify("Task not found.", color='negative')
+        return
+
+    with ui.dialog() as dialog, ui.card().classes('w-[32rem]'):
+        ui.label('Edit Task').classes(DIALOG_TITLE_CLASSES)
+        title_input = ui.input('Title', value=task['title']).props('autofocus').classes('w-full')
+        content_input = ui.textarea('Content', value=task['content']).classes('w-full')
+        duration_input = ui.number('Duration (days)', value=task['duration'], min=1, step=1).classes('w-full')
+        with ui.row().classes('w-full justify-end'):
+            ui.button('Cancel', on_click=dialog.close, color='secondary')
+            ui.button('Save', on_click=lambda: (
+                update_task_details(task_id, title_input.value, content_input.value, int(duration_input.value or 1)),
+                dialog.close()
+            ))
+    dialog.open()
+
 def open_new_task_dialog():
     """Opens a dialog for adding a new task."""
     with ui.dialog() as dialog, ui.card().classes('w-[32rem]'):
-        ui.label('Add New Task').classes('text-h6')
+        ui.label('Add New Task').classes(DIALOG_TITLE_CLASSES)
         title_input = ui.input('Title').props('autofocus').classes('w-full')
         content_input = ui.textarea('Content').classes('w-full')
-        duration_input = ui.number('Duration (days)', value=1, min=1, step=1).props('dense')
+        duration_input = ui.number('Duration (days)', value=1, min=1, step=1).classes('w-full')
         with ui.row().classes('w-full justify-end'):
             ui.button('Cancel', on_click=dialog.close, color='secondary')
             ui.button('Add Task', on_click=lambda: (

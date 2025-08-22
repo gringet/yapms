@@ -45,6 +45,17 @@ def get_tasks() -> List[sqlite3.Row]:
     with get_db_connection() as conn:
         return conn.execute('SELECT id, title, content, status, duration FROM tasks ORDER BY id').fetchall()
 
+def get_task(task_id: int) -> sqlite3.Row:
+    """Retrieves a single task by its ID."""
+    with get_db_connection() as conn:
+        return conn.execute('SELECT id, title, content, status, duration FROM tasks WHERE id = ?', (task_id,)).fetchone()
+
+def update_task_details(task_id: int, title: str, content: str, duration: int):
+    """Updates the details (title, content, duration) of a specific task."""
+    with get_db_connection() as conn:
+        conn.execute('UPDATE tasks SET title = ?, content = ?, duration = ? WHERE id = ?',
+                       (title, content, duration, task_id))
+
 def update_task_status(task_id: int, new_status: str):
     """Updates the status (column) of a specific task."""
     with get_db_connection() as conn:
