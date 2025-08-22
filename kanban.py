@@ -106,12 +106,17 @@ class KanbanTask(ui.card):
         self.classes('w-full mb-2 cursor-pointer hover:shadow-lg').props('draggable=true')
         self.on('dragstart', self._handle_drag_start)
         self.on('dragend', self._handle_drag_end)
+        self.on('click', lambda: open_edit_task_dialog(self.task_id))
         with self:
-            with ui.label(task_data['title']).classes('font-bold truncate'):
-                ui.tooltip(task_data['title'])
-            with ui.label(task_data['content']).classes('text-sm text-gray-600 my-1 truncate'):
+            ui.label(task_data['title']).classes('font-bold truncate')
+            with ui.label(task_data['content']).classes('text-sm text-gray-600 my-1') as content_label:
                 if task_data['content']:
-                    ui.tooltip(task_data['content'])
+                    ui.tooltip(task_data['content']).style('max-width: 28rem; overflow-wrap: break-word;')
+                content_label.style(
+                    'display: -webkit-box;'
+                    '-webkit-box-orient: vertical;'
+                    '-webkit-line-clamp: 2;'  # Limit to 2 lines
+                    'overflow: hidden;')
             if task_data.get('duration'):
                 with ui.row().classes('w-full items-center justify-end text-xs text-gray-500'):
                     ui.icon('timer', size='xs').classes('mr-1')
