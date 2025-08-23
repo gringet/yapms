@@ -1,7 +1,66 @@
 from nicegui import ui
+import database
+import datetime
+import json
 
 def build_content():
-    """Builds the placeholder UI for the Gantt Chart view."""
-    ui.label('Gantt Chart View').classes('text-2xl')
-    ui.label('This is a placeholder for the Gantt chart.').classes('text-gray-600 mb-2')
-    ui.label('It will display tasks with their durations.').classes('text-sm text-gray-500')
+    """Builds the interactive Gantt chart view using Frappe Gantt."""
+
+    tasks = database.get_tasks()
+
+    if not tasks:
+        ui.label('No tasks to display.').classes('text-lg text-gray-500')
+        ui.label('Add some tasks in the Kanban board view.').classes('text-sm text-gray-400')
+        return
+
+    # --- Task Processing for Gantt Chart ---
+    gantt_tasks = []
+    # We'll sequence tasks one after another starting from today for a clear timeline.
+    start_of_timeline = datetime.date.today()
+
+    # Map Kanban status to a numerical progress value for the Gantt chart.
+    progress_map = {
+        'To Do': 0,
+        'In Progress': 50,  # Assumption: 'In Progress' is 50% complete.
+        'Done': 100,
+    }
+
+    for task in tasks:
+        duration = task['duration'] if task['duration'] > 0 else 1
+        end_of_task = start_of_timeline + datetime.timedelta(days=duration - 1)
+
+        gantt_tasks.append({
+            'id': str(task['id']),
+            'name': task['title'],
+            'start': start_of_timeline.strftime('%Y-%m-%d'),
+            'end': end_of_task.strftime('%Y-%m-%d'),
+            'progress': progress_map.get(task['status'], 0),
+            'dependencies': ''  # Dependencies are not part of our current data model.
+        })
+
+        # The next task starts the day after the current one ends.
+        start_of_timeline = end_of_task + datetime.timedelta(days=1)
+
+    # --- UI and JavaScript Initialization ---
+
+    # The container for the Gantt chart. Frappe-Gantt renders into an SVG element.
+    ui.html('<svg id="gantt-container"></svg>').classes('w-full h-[50vh] min-h-[25rem]')
+
+    # Convert the Python list of tasks into a JSON string.
+    tasks_json = json.dumps(gantt_tasks)
+
+    # Run JavaScript to initialize the Gantt chart. This script creates a new Gantt
+    # object, passes the task data, and configures its appearance and behavior.
+    ui.run_javascript(f'''
+        const tasks = {tasks_json};
+        const gantt_container = document.getElementById("gantt-container");
+
+        if (gantt_container && tasks && tasks.length > 0) {{
+            // Clear the container before rendering to avoid duplicates when switching views.
+            gantt_container.innerHTML = '';
+            new Gantt(gantt_container, tasks, {{
+                view_mode: 'Week',
+                language: 'en'
+            }});
+        }}
+    ''')
