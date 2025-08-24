@@ -6,7 +6,7 @@ import json
 def build_content():
     """Builds the interactive Gantt chart view using Frappe Gantt."""
 
-    tasks = database.get_tasks()
+    tasks = database.getTasks()
 
     if not tasks:
         ui.label('No tasks to display.').classes('text-lg text-gray-500')
