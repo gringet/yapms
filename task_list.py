@@ -14,4 +14,4 @@ def build(tasks: List[Task]):
     {'name': 'duration', 'label': 'Duration', 'field': 'duration', 'sortable': True, 'align': 'left', 'classes': 'w-2/12'},
   ]
   tasks = [task.dict() for task in tasks]
-  table = ui.table(columns=columns, rows=tasks, row_key='id').classes('w-full').props('flat bordered')
+  ui.table(columns=columns, rows=tasks, row_key='id').classes('w-full').props('flat bordered')

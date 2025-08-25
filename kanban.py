@@ -4,7 +4,15 @@ from typing import List, Optional
 
 from nicegui import ui
 
-from task import Task
+from task import Task, addUpdateTaskDialog
+
+ui.add_head_html("""
+<style>
+.dragging * {
+  pointer-events: none !important;
+}
+</style>
+""")
 
 
 dragged: Optional[Card] = None
@@ -14,36 +22,45 @@ def build(tasks: List[Task]):
   with ui.row():
     for columnName in ["To Do", "In Progress", "Done"]:
       with Column(columnName):
-        for task in [task for task in tasks if task._status == columnName]:
+        for task in [task for task in tasks if task.status == columnName]:
           Card(task)
 
 
 class Column(ui.column):
-  highlighted = "bg-blue-grey-2"
-  unhighlighted = "bg-blue-grey-3"
+  highlighted = "bg-blue-grey-3"
+  unhighlighted = "bg-blue-grey-2"
 
   def __init__(self, name: str) -> None:
     super().__init__()
-    with self.classes(f"{self.highlighted} w-96 full-height p-3 rounded"):
+    with self.classes(f"{self.unhighlighted} w-96 max-w-[calc(33vw-8rem)] full-height p-3 rounded"):
       ui.label(name).classes("text-bold ml-1")
     self.name = name
-    self.on("dragover.prevent", self.highlight)
-    self.on("dragleave", self.unhighlight)
-    self.on("drop", self.moveCard)
+    self._dragCount = 0
+    self.on("dragenter", self._onDragEnter)
+    self.on("dragover.prevent", lambda: None)
+    self.on("dragleave", self._onDragLeave)
+    self.on("drop", self._onDrop)
 
-  def highlight(self) -> None:
-    self.classes(remove=self.highlighted, add=self.unhighlighted)
+  def _onDragEnter(self) -> None:
+    self._dragCount += 1
+    if self._dragCount == 1:
+      self.classes(add="dragging")
+      self.classes(remove=self.unhighlighted, add=self.highlighted)
 
-  def unhighlight(self) -> None:
-    self.classes(remove=self.unhighlighted, add=self.highlighted)
+  def _onDragLeave(self) -> None:
+    self._dragCount -= 1
+    if self._dragCount == 0:
+      self.classes(remove="dragging")
+      self.classes(remove=self.highlighted, add=self.unhighlighted)
 
-  def moveCard(self) -> None:
+  def _onDrop(self) -> None:
     global dragged  # pylint: disable=global-statement # noqa: PLW0603
-    self.unhighlight()
-    dragged.parent_slot.parent.remove(dragged)
-    with self:
-      Card(dragged.task)
-    dragged.task.status = self.name
+    if not self == dragged.parent_slot.parent:
+      dragged.parent_slot.parent.remove(dragged)
+      dragged.task.status = self.name
+      with self:
+        Card(dragged.task)
+    self._onDragLeave()
     dragged = None
 
 
@@ -52,10 +69,20 @@ class Card(ui.card):
     super().__init__()
     self.task = task
     with self.props("draggable").classes("w-full cursor-pointer bg-grey-1"):
-      ui.label(task._title).classes("text-weight-bold")
-      ui.label(task._description)
-    self.on("dragstart", self.handleDragStart)
+      ui.label(task.title).classes("text-weight-bold")
+      ui.label(task.description)
+      with ui.row().classes("w-full justify-end items-center"):
+        ui.icon("schedule").classes("text-grey-7")
+        ui.label(f"{task.duration} {'days' if task.duration > 1 else 'day'}").classes("text-grey-7")
 
-  def handleDragStart(self) -> None:
+    self.on("dragstart", self._onDragStart)
+    self.on("dragend", self._onDragEnd)
+    self.on("click", lambda: addUpdateTaskDialog(self.task))
+
+  def _onDragStart(self) -> None:
     global dragged  # pylint: disable=global-statement # noqa: PLW0603
     dragged = self
+
+  def _onDragEnd(self) -> None:
+    global dragged
+    dragged = None

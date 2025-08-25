@@ -5,18 +5,21 @@ from nicegui.observables import ObservableList
 
 import database
 
+from typing import Callable
+
 
 tasks = ObservableList()
 
 
 @dataclass
 class Task:
-  def __init__(self, id: int, title: str, description: str="", status: str="To Do", duration: int=1):
+  def __init__(self, id: int, title: str, description: str="", status: str="To Do", duration: int=1, onChange: Callable=None):
     self._id = id
     self._title = title
     self._description = description
     self._status = status
     self._duration = duration
+    self._onChange = onChange
 
   def dict(self):
     return {"id": self.id, "title": self.title, "description": self.description, "status": self.status,
@@ -32,8 +35,11 @@ class Task:
 
   @title.setter
   def title(self, title: str):
+    if self._title == title:
+      return
     database.updateTask(self._id, title=title)
     self._title = title
+    self._onChange()
 
   @property
   def description(self):
@@ -41,8 +47,11 @@ class Task:
 
   @description.setter
   def description(self, description: str):
+    if self._description == description:
+      return
     database.updateTask(self._id, description=description)
     self._description = description
+    self._onChange()
 
   @property
   def status(self):
@@ -50,8 +59,11 @@ class Task:
 
   @status.setter
   def status(self, status: str):
+    if self._status == status:
+      return
     database.updateTask(self._id, status=status)
     self._status = status
+    self._onChange()
 
   @property
   def duration(self):
@@ -61,6 +73,7 @@ class Task:
   def duration(self, duration: int):
     database.updateTask(self._id, duration=duration)
     self._duration = duration
+    self._onChange()
 
 
 def addUpdateTaskDialog(task: Task=None):
@@ -69,6 +82,9 @@ def addUpdateTaskDialog(task: Task=None):
       taskId = database.addTask(title, description, "To Do", duration)
       tasks.append(Task(taskId, title, description, "To Do", duration))
     else:
+      task.title = title
+      task.description = description
+      task.duration = duration
       database.updateTask(task.id, title=title, description=description, duration=duration)
 
   with ui.dialog() as dialog, ui.card().classes("w-[32rem]"):
