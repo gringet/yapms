@@ -1,36 +1,33 @@
-#!/usr/bin/env python3
-"""
-Project Manager Application - New Organized Structure
-Entry point for the reorganized codebase
-"""
-
 import os
-import sys
 import time
+
 from nicegui import ui
 
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+from .data import database
+from .data.task import Task, addUpdateTaskDialog
+from .views.tasks_view import build as tasks_build
+from .components.people import build as people_build, addStakeholderDialog
+from .core.app_state import appState
 
-# Import modules from organized structure
-from src.data import database
-from src.data.task import Task, tasks
-from src.views.tasks.task_dialogs import addUpdateTaskDialog
-from src.views.tasks import build_tasks as tasks_build
-from src.views.people import build as people_build, addStakeholderDialog
-from src.core.app_state import appState
 
 if not os.path.exists(database.DB_FILE):
   database.createDummy()
 
-def refresher():
-  from src.views.tasks import build_kanban, build_task_list
-  build_kanban.refresh()
-  build_task_list.refresh()
 
-# Use the ObservableList from task module
-tasks.extend([Task(**dict(t), onChange=refresher) for t in database.getTasks()])
-appState.setTasksList(tasks)
+def refresher():
+  from .components.kanban import build as kanban_build
+  from .components.task_list import build as task_list_build
+  kanban_build.refresh()
+  task_list_build.refresh()
+
+
+task_list = []
+for task_data in database.getTasks():
+  task_obj = Task(**dict(task_data), onChange=refresher)
+  task_list.append(task_obj)
+
+appState.setTasksList(task_list)
+
 
 ui.add_head_html('<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>')
 
@@ -60,6 +57,7 @@ def onTabChange():
 
 tabs.on('update:model-value', onTabChange)
 
+
 with ui.left_drawer().classes("bg-white border-r border-black w-32") as leftDrawer:
   with ui.column().classes("w-full mt-4 gap-2"):
     def showTasks():
@@ -79,13 +77,14 @@ with ui.left_drawer().classes("bg-white border-r border-black w-32") as leftDraw
     ui.button("People", on_click=showPeople).classes("w-full justify-start").props("flat color=black")
     ui.button("Tasks", on_click=showTasks).classes("w-full justify-start").props("flat color=black")
 
+
 contentArea = ui.column().classes("w-full")
 appState.setContentArea(contentArea)
 
 with contentArea:
   tasks_build(appState.tasksList, appState.currentTab)
 
+
 leftDrawer.hide()
 
-# if __name__ == "__main__":
 ui.run()

@@ -2,3 +2,4 @@
 .nicegui
 venv
 kanban.db
+db.db

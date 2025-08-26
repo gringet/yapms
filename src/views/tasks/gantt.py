@@ -3,7 +3,7 @@ import json
 
 from nicegui import ui
 
-import database
+from ...data import database
 
 @ui.refreshable
 def build():

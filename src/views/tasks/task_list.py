@@ -2,7 +2,7 @@ from typing import List
 
 from nicegui import ui
 
-from task import Task
+from ...data.task import Task
 
 @ui.refreshable
 def build(tasks: List[Task]):

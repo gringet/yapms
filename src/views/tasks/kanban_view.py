@@ -4,7 +4,9 @@ from typing import List, Optional
 
 from nicegui import ui
 
-from task import Task, addUpdateTaskDialog
+from ...data.task import Task
+from .task_dialogs import addUpdateTaskDialog
+from ...core.app_state import appState
 
 ui.add_head_html("""
 <style>
@@ -14,8 +16,6 @@ ui.add_head_html("""
 </style>
 """)
 
-
-dragged: Optional[Card] = None
 
 @ui.refreshable
 def build(tasks: List[Task]):
@@ -54,14 +54,14 @@ class Column(ui.column):
       self.classes(remove=self.highlighted, add=self.unhighlighted)
 
   def _onDrop(self) -> None:
-    global dragged  # pylint: disable=global-statement # noqa: PLW0603
-    if not self == dragged.parent_slot.parent:
-      dragged.parent_slot.parent.remove(dragged)
-      dragged.task.status = self.name
+    draggedCard = appState.getDraggedCard()
+    if draggedCard and not self == draggedCard.parent_slot.parent:
+      draggedCard.parent_slot.parent.remove(draggedCard)
+      draggedCard.task.status = self.name
       with self:
-        Card(dragged.task)
+        Card(draggedCard.task)
     self._onDragLeave()
-    dragged = None
+    appState.setDraggedCard(None)
 
 
 class Card(ui.card):
@@ -91,9 +91,7 @@ class Card(ui.card):
     self.on("click", lambda: addUpdateTaskDialog(self.task))
 
   def _onDragStart(self) -> None:
-    global dragged  # pylint: disable=global-statement # noqa: PLW0603
-    dragged = self
+    appState.setDraggedCard(self)
 
   def _onDragEnd(self) -> None:
-    global dragged
-    dragged = None
+    appState.setDraggedCard(None)

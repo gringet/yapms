@@ -1,22 +1,6 @@
 from nicegui import ui
-from typing import List, Dict, Any
-
-
-class Stakeholder:
-  def __init__(self, name: str, surname: str, email: str, type: str, **kwargs):
-    self.name = name
-    self.surname = surname
-    self.email = email
-    self.type = type
-  
-  def toDict(self) -> Dict[str, Any]:
-    return {
-      'name': self.name,
-      'surname': self.surname,
-      'email': self.email,
-      'type': self.type
-    }
-
+from typing import List
+from ...data.stakeholder import Stakeholder
 
 stakeholders: List[Stakeholder] = [
   Stakeholder("John", "Doe", "john.doe@company.com", "strategy"),
