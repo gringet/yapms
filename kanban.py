@@ -68,14 +68,23 @@ class Card(ui.card):
   def __init__(self, task: Task) -> None:
     super().__init__()
     self.task = task
-    with self.props("draggable").classes("w-full cursor-pointer bg-white border border-black rounded-none shadow-none hover:bg-gray-50"):
-      ui.label(task.title).classes("text-weight-bold text-black")
-      ui.label(task.description).classes("text-gray-600")
-      if task.startdate:
-        ui.label(f"Start: {task.startdate}").classes("text-gray-500 text-sm")
-      with ui.row().classes("w-full justify-end items-center"):
-        ui.icon("schedule").classes("text-black")
-        ui.label(f"{task.duration} {'days' if task.duration > 1 else 'day'}").classes("text-black font-mono text-sm")
+    
+    with self.props("draggable").classes("w-full min-h-[160px] cursor-pointer hover:shadow-lg transition-shadow flex flex-col"):
+      ui.label(task.title).classes("text-h6 font-semibold")
+      if task.description:
+        ui.label(task.description).classes("text-sm text-grey-8 -mt-2 flex-1")
+      
+      with ui.row().classes("w-full justify-between items-end mt-0 p-0 pt-0"):
+        if task.startdate:
+          with ui.row().classes("items-center gap-1"):
+            ui.icon('event').classes('text-grey-6')
+            ui.label(task.startdate).classes("text-sm text-grey-8")
+        else:
+          ui.space()
+        
+        with ui.row().classes("items-center gap-1"):
+          ui.icon('schedule').classes('text-grey-6')
+          ui.label(f"{task.duration}d").classes("text-sm text-grey-8")
 
     self.on("dragstart", self._onDragStart)
     self.on("dragend", self._onDragEnd)
