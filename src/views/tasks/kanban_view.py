@@ -13,6 +13,13 @@ ui.add_head_html("""
 .dragging * {
   pointer-events: none !important;
 }
+.kanban-column {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+.kanban-column::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
 </style>
 """)
 
@@ -32,8 +39,8 @@ class Column(ui.column):
 
   def __init__(self, name: str) -> None:
     super().__init__()
-    with self.classes(f"{self.unhighlighted} w-96 max-w-[calc(32vw-8rem)] h-screen min-h-screen p-3 rounded-none"):
-      ui.label(name).classes("text-bold ml-1 text-black font-bold uppercase tracking-wide")
+    with self.classes(f"{self.unhighlighted} kanban-column w-96 max-w-[calc(32vw-8rem)] h-[calc(100vh-100px)] p-3 rounded-none overflow-y-auto"):
+      ui.label(name).classes("text-bold ml-1 text-black font-bold uppercase tracking-wide sticky top-0 bg-white z-10 -mx-3 px-3 py-2 mb-2")
     self.name = name
     self._dragCount = 0
     self.on("dragenter", self._onDragEnter)

@@ -60,8 +60,8 @@ def onTabChange():
 
 tabs.on('update:model-value', onTabChange)
 
-with ui.left_drawer().classes("bg-white border-r border-black w-32") as leftDrawer:
-  with ui.column().classes("w-full mt-4 gap-2"):
+with ui.left_drawer().classes("bg-white border-r border-black") as leftDrawer:
+  with ui.column().classes("w-full gap-0"):
     def showTasks():
       appState.setView("tasks")
       appState.tabs.set_visibility(True)
@@ -76,8 +76,13 @@ with ui.left_drawer().classes("bg-white border-r border-black w-32") as leftDraw
       with appState.contentArea:
         people_build()
     
-    ui.button("People", on_click=showPeople).classes("w-full justify-start").props("flat color=black")
-    ui.button("Tasks", on_click=showTasks).classes("w-full justify-start").props("flat color=black")
+    with ui.button(on_click=showPeople).classes("w-full justify-start pl-2").props("flat color=black"):
+      ui.icon("people").classes("mr-2")
+      ui.label("People")
+    
+    with ui.button(on_click=showTasks).classes("w-full justify-start pl-2").props("flat color=black"):
+      ui.icon("task").classes("mr-2") 
+      ui.label("Tasks")
 
 contentArea = ui.column().classes("w-full")
 appState.setContentArea(contentArea)
@@ -85,7 +90,7 @@ appState.setContentArea(contentArea)
 with contentArea:
   tasks_build(appState.tasksList, appState.currentTab)
 
-leftDrawer.hide()
+# leftDrawer.hide()
 
 # if __name__ == "__main__":
 ui.run()
