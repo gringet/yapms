@@ -1,9 +1,13 @@
-from nicegui import ui
-import database
 import datetime
 import json
 
-def build_content():
+from nicegui import ui
+
+import database
+
+@ui.refreshable
+def build():
+    return
     """Builds the interactive Gantt chart view using Frappe Gantt."""
 
     tasks = database.getTasks()
@@ -49,18 +53,18 @@ def build_content():
     # Convert the Python list of tasks into a JSON string.
     tasks_json = json.dumps(gantt_tasks)
 
-    # Run JavaScript to initialize the Gantt chart. This script creates a new Gantt
-    # object, passes the task data, and configures its appearance and behavior.
+    # Run JavaScript to initialize the Gantt chart with a small delay to ensure DOM is ready
     ui.run_javascript(f'''
-        const tasks = {tasks_json};
-        const gantt_container = document.getElementById("gantt-container");
+        setTimeout(() => {{
+            const tasks = {tasks_json};
+            const gantt_container = document.getElementById("gantt-container");
 
-        if (gantt_container && tasks && tasks.length > 0) {{
-            // Clear the container before rendering to avoid duplicates when switching views.
-            gantt_container.innerHTML = '';
-            new Gantt(gantt_container, tasks, {{
-                view_mode: 'Week',
-                language: 'en'
-            }});
-        }}
+            if (gantt_container && tasks && tasks.length > 0) {{
+                gantt_container.innerHTML = '';
+                new Gantt(gantt_container, tasks, {{
+                    view_mode: 'Week',
+                    language: 'en'
+                }});
+            }}
+        }}, 100);
     ''')

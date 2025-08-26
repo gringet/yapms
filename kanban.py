@@ -27,13 +27,13 @@ def build(tasks: List[Task]):
 
 
 class Column(ui.column):
-  highlighted = "bg-blue-grey-3"
-  unhighlighted = "bg-blue-grey-2"
+  highlighted = "bg-gray-100 border-2 border-black"
+  unhighlighted = "bg-white border border-gray-300"
 
   def __init__(self, name: str) -> None:
     super().__init__()
-    with self.classes(f"{self.unhighlighted} w-96 max-w-[calc(33vw-8rem)] full-height p-3 rounded"):
-      ui.label(name).classes("text-bold ml-1")
+    with self.classes(f"{self.unhighlighted} w-96 max-w-[calc(32vw-8rem)] h-screen min-h-screen p-3 rounded-none"):
+      ui.label(name).classes("text-bold ml-1 text-black font-bold uppercase tracking-wide")
     self.name = name
     self._dragCount = 0
     self.on("dragenter", self._onDragEnter)
@@ -68,12 +68,14 @@ class Card(ui.card):
   def __init__(self, task: Task) -> None:
     super().__init__()
     self.task = task
-    with self.props("draggable").classes("w-full cursor-pointer bg-grey-1"):
-      ui.label(task.title).classes("text-weight-bold")
-      ui.label(task.description)
+    with self.props("draggable").classes("w-full cursor-pointer bg-white border border-black rounded-none shadow-none hover:bg-gray-50"):
+      ui.label(task.title).classes("text-weight-bold text-black")
+      ui.label(task.description).classes("text-gray-600")
+      if task.startdate:
+        ui.label(f"Start: {task.startdate}").classes("text-gray-500 text-sm")
       with ui.row().classes("w-full justify-end items-center"):
-        ui.icon("schedule").classes("text-grey-7")
-        ui.label(f"{task.duration} {'days' if task.duration > 1 else 'day'}").classes("text-grey-7")
+        ui.icon("schedule").classes("text-black")
+        ui.label(f"{task.duration} {'days' if task.duration > 1 else 'day'}").classes("text-black font-mono text-sm")
 
     self.on("dragstart", self._onDragStart)
     self.on("dragend", self._onDragEnd)
