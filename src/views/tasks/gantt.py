@@ -31,8 +31,8 @@ def build():
     }
 
     for task in tasks:
-        duration = task['duration'] if task['duration'] > 0 else 1
-        end_of_task = start_of_timeline + datetime.timedelta(days=duration - 1)
+        effort = task['effort'] if task['effort'] > 0 else 1
+        end_of_task = start_of_timeline + datetime.timedelta(days=effort - 1)
 
         gantt_tasks.append({
             'id': str(task['id']),

@@ -1,73 +1,72 @@
 from nicegui import ui
 from typing import List
-from ...data.stakeholder import Stakeholder
-from ...core.styles import Layout, Text, Input, Card, Kanban
-
-stakeholders: List[Stakeholder] = [
-  Stakeholder("John", "Doe", "john.doe@company.com", "strategy"),
-  Stakeholder("Jane", "Smith", "jane.smith@company.com", "subject matter expert"),
-  Stakeholder("Bob", "Johnson", "bob.johnson@company.com", "sponsor"),
-  Stakeholder("Alice", "Wilson", "alice.wilson@company.com", "executant")
-]
+from ...data.stakeholder import Stakeholder, addUpdateStakeholder, stakeholders
+from ...core.styles import Layout, Text, Input, Card, Kanban, Button
+from ...core.app_state import appState
 
 
-def addStakeholderDialog():
-  with ui.dialog() as dialog, ui.card().style(Layout.DIALOG_MIN_WIDTH):
-    ui.label('Add New Stakeholder').classes(Text.H6)
+def addUpdateStakeholderDialog(stakeholder: Stakeholder = None):
+  def _addUpdateStakeholder(*args):
+    success, message = addUpdateStakeholder(*args)
+    if success:
+      build.refresh()
+      dialog.close()
+    else:
+      ui.notify(message, type="negative")
+
+  # Don't allow editing of the "Not Assigned" stakeholder
+  if stakeholder and stakeholder.name == "Not" and stakeholder.surname == "Assigned":
+    ui.notify("Cannot edit the 'Not Assigned' system stakeholder", type="warning")
+    return
     
-    nameInput = ui.input('Name').props(Input.OUTLINED)
-    surnameInput = ui.input('Surname').props(Input.OUTLINED)
-    emailInput = ui.input('Email').props(Input.OUTLINED)
-    typeSelect = ui.select(['strategy', 'subject matter expert', 'sponsor', 'executant'], 
-                           label='Type').props(Input.OUTLINED)
+  with ui.dialog() as dialog, ui.card().classes(f"{Layout.DIALOG_WIDTH} {Card.DIALOG}"):
+    nameInput = ui.input('Name', value=stakeholder.name if stakeholder else "").props(f"autofocus {Input.OUTLINED}").classes(Input.DEFAULT)
+    surnameInput = ui.input('Surname', value=stakeholder.surname if stakeholder else "").props(Input.OUTLINED).classes(Input.DEFAULT)
+    emailInput = ui.input('Email', value=stakeholder.email if stakeholder else "").props(Input.OUTLINED).classes(Input.DEFAULT)
+    
+    stakeholder_types = ['strategy', 'subject matter expert', 'sponsor', 'executant']
+    default_type = stakeholder.type if stakeholder and stakeholder.type in stakeholder_types else None
+    typeSelect = ui.select(stakeholder_types, 
+                           label='Type', value=default_type).props(Input.OUTLINED).classes(Input.DEFAULT)
     
     with ui.row().classes(Layout.ROW):
-      ui.button('Cancel', on_click=dialog.close)
-      
-      def addStakeholder():
-        if nameInput.value and surnameInput.value and emailInput.value and typeSelect.value:
-          stakeholder = Stakeholder(
-            nameInput.value,
-            surnameInput.value,
-            emailInput.value,
-            typeSelect.value
-          )
-          stakeholders.append(stakeholder)
-          build.refresh()
-          dialog.close()
-      
-      ui.button('Add', on_click=addStakeholder).props('color=primary')
+      ui.button('Cancel', on_click=dialog.close).classes(Button.CANCEL)
+      ui.button('Save', on_click=lambda: (
+        _addUpdateStakeholder(stakeholder, nameInput.value, surnameInput.value, emailInput.value, typeSelect.value)
+      )).classes(Button.PRIMARY)
   
   dialog.open()
+
+# Keep the old function name for backward compatibility
+def addStakeholderDialog():
+  addUpdateStakeholderDialog()
 
 
 @ui.refreshable
 def build():
   with ui.column().classes(Layout.COLUMN):
-    if not stakeholders:
+    filtered_stakeholders = appState.filterStakeholders(stakeholders)
+    
+    # Check if we have any non-system stakeholders (excluding "Not Assigned")
+    visible_stakeholders = [s for s in stakeholders if not (s.name == "Not" and s.surname == "Assigned")]
+    
+    if not visible_stakeholders:
       ui.label('No stakeholders added yet.').classes(Text.CENTER_GRAY)
+    elif not filtered_stakeholders:
+      ui.label('No stakeholders match your search.').classes(Text.CENTER_GRAY)
     else:
       with ui.row().classes(Layout.GRID_4_RESPONSIVE):
-        for stakeholder in stakeholders:
+        for stakeholder in filtered_stakeholders:
           createStakeholderCard(stakeholder)
 
 
 def createStakeholderCard(stakeholder: Stakeholder):
-  typeColors = {
-    'strategy': 'blue',
-    'subject matter expert': 'green',
-    'sponsor': 'purple',
-    'executant': 'orange'
-  }
-  
-  color = typeColors.get(stakeholder.type, 'grey')
-  
-  with ui.card().classes(Card.STAKEHOLDER):
-    ui.label(f'{stakeholder.name} {stakeholder.surname}').classes(Text.H6_BOLD)
-    ui.chip(stakeholder.type, color=color).props('size=sm').classes('-mt-2 flex-1')
+  with ui.card().classes(Card.STAKEHOLDER).on('click', lambda: addUpdateStakeholderDialog(stakeholder)):
+    ui.label(f'{stakeholder.name} {stakeholder.surname}').classes(Text.H6_BOLD).style('font-size: 1.2rem')
+    ui.label(stakeholder.type).classes('-mt-2 flex-1').style('background-color: white; font-size: 1rem; color: black; padding: 2px 8px; display: inline-block; text-align: center; font-weight: 500;')
     
     with ui.row().classes(Kanban.TASK_ROW):
       with ui.row().classes(Kanban.TASK_ICON_ROW):
         ui.icon('email').classes(Kanban.TASK_ICON)
-        ui.label(stakeholder.email).classes(Kanban.TASK_LABEL)
+        ui.label(stakeholder.email).classes(Kanban.TASK_LABEL).style('font-size: 0.95rem')
       ui.space()

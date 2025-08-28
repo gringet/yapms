@@ -5,6 +5,7 @@ from typing import List, Optional
 from nicegui import ui
 
 from ...data.task import Task
+from ...data.stakeholder import getStakeholderById
 from .dialogs import addUpdateTaskDialog
 from ...core.app_state import appState
 from ...core.styles import KanbanColumn, Kanban, Card as CardStyles, applyGlobalStyles
@@ -14,10 +15,12 @@ applyGlobalStyles()
 
 @ui.refreshable
 def build(tasks: List[Task]):
-  with ui.row():
+  filtered_tasks = appState.filterTasks(tasks)
+  with ui.row().classes("w-full flex flex-nowrap"):
     for columnName in ["Backlog", "To Do", "In Progress", "Done"]:
       with Column(columnName):
-        for task in [task for task in tasks if task.status == columnName]:
+        column_tasks = [task for task in filtered_tasks if task.status == columnName]
+        for task in column_tasks:
           Card(task)
 
 
@@ -51,6 +54,13 @@ class Column(ui.column):
   def _onDrop(self) -> None:
     draggedCard = appState.getDraggedCard()
     if draggedCard and not self == draggedCard.parent_slot.parent:
+      # Check if task has start date for active statuses
+      if self.name in ["To Do", "In Progress", "Done"] and not draggedCard.task.startdate:
+        ui.notify("Tasks must have a start date to be moved to active status", type="warning")
+        self._onDragLeave()
+        appState.setDraggedCard(None)
+        return
+      
       draggedCard.parent_slot.parent.remove(draggedCard)
       draggedCard.task.status = self.name
       with self:
@@ -69,17 +79,24 @@ class Card(ui.card):
       if task.description:
         ui.label(task.description).classes(Kanban.TASK_DESCRIPTION)
       
-      with ui.row().classes(Kanban.TASK_ROW):
+      with ui.row().classes(Kanban.TASK_ROW + " items-center"):
+        # Startdate and Effort together
         if task.startdate:
           with ui.row().classes(Kanban.TASK_ICON_ROW):
             ui.icon('event').classes(Kanban.TASK_ICON)
             ui.label(task.startdate).classes(Kanban.TASK_LABEL)
-        else:
-          ui.space()
         
         with ui.row().classes(Kanban.TASK_ICON_ROW):
           ui.icon('schedule').classes(Kanban.TASK_ICON)
-          ui.label(f"{task.duration}d").classes(Kanban.TASK_LABEL)
+          ui.label(f"{task.effort}d").classes(Kanban.TASK_LABEL)
+
+        # Space between info and assignee
+        ui.space()
+        
+        # Assignee on the right
+        stakeholder = getStakeholderById(task.assigned_stakeholder_id)
+        if stakeholder:
+          ui.label(stakeholder.getAcronym()).style('background-color: white; font-size: 0.9rem; color: black; padding: 1px 6px; display: inline-block; text-align: center; font-weight: 600;')
 
     self.on("dragstart", self._onDragStart)
     self.on("dragend", self._onDragEnd)

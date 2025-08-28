@@ -10,18 +10,19 @@ tasks = ObservableList()
 
 @dataclass
 class Task:
-  def __init__(self, id: int, title: str, description: str="", status: str="Backlog", duration: int=1, startdate: str=None, onChange: Callable=None):
+  def __init__(self, id: int, title: str, description: str="", status: str="Backlog", effort: int=1, startdate: str=None, assigned_stakeholder_id: int=None, onChange: Callable=None):
     self._id = id
     self._title = title
     self._description = description
     self._status = status
-    self._duration = duration
+    self._effort = effort
     self._startdate = startdate
+    self._assigned_stakeholder_id = assigned_stakeholder_id if assigned_stakeholder_id is not None else 1
     self._onChange = onChange
 
   def dict(self):
     return {"id": self.id, "title": self.title, "description": self.description, "status": self.status,
-            "duration": self.duration, "startdate": self.startdate}
+            "effort": self.effort, "startdate": self.startdate, "assigned_stakeholder_id": self.assigned_stakeholder_id}
 
   @property
   def id(self):
@@ -60,12 +61,12 @@ class Task:
     self._update_field("status", status, self._status)
 
   @property
-  def duration(self):
-    return self._duration
+  def effort(self):
+    return self._effort
 
-  @duration.setter
-  def duration(self, duration: int):
-    self._update_field("duration", duration, self._duration)
+  @effort.setter
+  def effort(self, effort: int):
+    self._update_field("effort", effort, self._effort)
 
   @property
   def startdate(self):
@@ -75,33 +76,52 @@ class Task:
   def startdate(self, startdate: str):
     self._update_field("startdate", startdate, self._startdate)
 
+  @property
+  def assigned_stakeholder_id(self):
+    return self._assigned_stakeholder_id
 
-def addUpdateTask(task: Task, title: str, description: str, duration: int, startdate: str) -> bool:
+  @assigned_stakeholder_id.setter
+  def assigned_stakeholder_id(self, assigned_stakeholder_id: int):
+    self._update_field("assigned_stakeholder_id", assigned_stakeholder_id, self._assigned_stakeholder_id)
+
+
+def addUpdateTask(task: Task, title: str, description: str, effort: int, startdate: str, assigned_stakeholder_id: int = 1) -> bool:
   """Pure business logic for adding/updating tasks without UI dependencies"""
   if not title.strip():
     return False, "Task title cannot be empty"
-  if duration <= 0:
-    return False, "Duration must be a positive integer"
-  try:
-    parts = startdate.split('-')
-    if len(parts) == 3:
-      year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
-      # Validate the date exists
-      datetime.date(year, month, day)
-      # Format with zero-padding
-      startdate = f"{year:04d}-{month:02d}-{day:02d}"
-    else:
-      raise ValueError
-  except (ValueError, TypeError):
-    return False, "Invalid date format"
+  if effort <= 0:
+    return False, "Effort must be a positive integer"
+  
+  # Check if task is in active status and requires start date
+  if task and task.status in ["To Do", "In Progress", "Done"] and (not startdate or not startdate.strip()):
+    return False, "Tasks in active status must have a start date"
+  
+  # Validate start date only if provided
+  if startdate and startdate.strip():
+    try:
+      parts = startdate.split('-')
+      if len(parts) == 3:
+        year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
+        # Validate the date exists
+        datetime.date(year, month, day)
+        # Format with zero-padding
+        startdate = f"{year:04d}-{month:02d}-{day:02d}"
+      else:
+        raise ValueError
+    except (ValueError, TypeError):
+      return False, "Invalid date format"
+  else:
+    # Allow empty start date only for new tasks or backlog tasks
+    startdate = None
     
   if task is None:
-    taskId = database.addTask(title, description, "Backlog", duration, startdate)
+    taskId = database.addTask(title, description, "Backlog", effort, startdate, assigned_stakeholder_id)
     if taskId:
-      tasks.append(Task(taskId, title, description, "Backlog", duration, startdate))
+      tasks.append(Task(taskId, title, description, "Backlog", effort, startdate, assigned_stakeholder_id))
   else:
     task.title = title
     task.description = description
-    task.duration = duration
+    task.effort = effort
     task.startdate = startdate
+    task.assigned_stakeholder_id = assigned_stakeholder_id
   return True, "Success"
