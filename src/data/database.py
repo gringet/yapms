@@ -4,7 +4,7 @@ import sqlite3
 from typing import List
 
 DB_FILE = "db.db"
-TASK_COLUMNS = ["title", "description", "status", "effort", "startdate", "assigned_stakeholder_id"]
+TASK_COLUMNS = ["title", "description", "status", "effort", "startdate", "assigned_stakeholder_id", "sort_key"]
 TASK_COLUMNS_STR = ", ".join(TASK_COLUMNS)
 VALID_STATUSES = ["Backlog", "To Do", "In Progress", "Done"]
 
@@ -18,6 +18,20 @@ def _getConnection() -> sqlite3.Connection:
   return conn
 
 
+def _migrateDatabase() -> None:
+  """Add sort_key column if it doesn't exist"""
+  with _getConnection() as conn:
+    cursor = conn.cursor()
+    # Check if sort_key column exists
+    cursor.execute("PRAGMA table_info(tasks)")
+    columns = [column[1] for column in cursor.fetchall()]
+    
+    if 'sort_key' not in columns:
+      # Add sort_key column
+      cursor.execute("ALTER TABLE tasks ADD COLUMN sort_key REAL")
+      # Update existing tasks to have sort_key equal to their id
+      cursor.execute("UPDATE tasks SET sort_key = id WHERE sort_key IS NULL")
+
 def createDummy() -> None:
   with _getConnection() as conn:
     cursor = conn.cursor()
@@ -29,8 +43,18 @@ def createDummy() -> None:
         status TEXT NOT NULL,
         effort INTEGER DEFAULT 1,
         startdate DATE,
-        assigned_stakeholder_id INTEGER
+        assigned_stakeholder_id INTEGER,
+        sort_key REAL
       )""")
+
+    cursor.execute("""
+      CREATE TRIGGER IF NOT EXISTS set_default_sort_key
+      AFTER INSERT ON tasks
+      WHEN NEW.sort_key IS NULL
+      BEGIN
+        UPDATE tasks SET sort_key = NEW.id WHERE id = NEW.id;
+      END
+    """)
 
     cursor.execute("""
       CREATE TABLE IF NOT EXISTS stakeholders (
@@ -49,12 +73,12 @@ def createDummy() -> None:
     cursor.execute(stakeholderCommand, ("Bob", "Johnson", "bob.johnson@company.com", "sponsor"))
     cursor.execute(stakeholderCommand, ("Alice", "Wilson", "alice.wilson@company.com", "executant"))
 
-    command = f"INSERT INTO tasks ({TASK_COLUMNS_STR}) VALUES (?, ?, ?, ?, ?, ?)"
-    cursor.execute(command, ("First Task", "This is the first task.", "To Do", 1, "2024-01-01", 1))  # Assigned to "Not Assigned"
-    cursor.execute(command, ("In-Progress Task", "This task is being worked on.", "In Progress", 3, "2024-01-02", 2))  # Assigned to John
-    cursor.execute(command, ("Completed Task", "This task is finished.", "Done", 5, "2024-01-03", 3))  # Assigned to Jane
+    command = f"INSERT INTO tasks ({TASK_COLUMNS_STR}) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    cursor.execute(command, ("First Task", "This is the first task.", "To Do", 1, "2024-01-01", 1, None))  # Assigned to "Not Assigned"
+    cursor.execute(command, ("In-Progress Task", "This task is being worked on.", "In Progress", 3, "2024-01-02", 2, None))  # Assigned to John
+    cursor.execute(command, ("Completed Task", "This task is finished.", "Done", 5, "2024-01-03", 3, None))  # Assigned to Jane
 
-def addTask(title: str, description: str, status: str, effort: int, startdate: str = None, assigned_stakeholder_id: int = 1) -> int:
+def addTask(title: str, description: str, status: str, effort: int, startdate: str = None, assigned_stakeholder_id: int = 1, sort_key: float = None) -> int:
   if not title.strip():
     print("Error: Task title cannot be empty")
     return None
@@ -67,13 +91,13 @@ def addTask(title: str, description: str, status: str, effort: int, startdate: s
   
   with _getConnection() as conn:
     cursor = conn.cursor()
-    command = f"INSERT INTO tasks ({TASK_COLUMNS_STR}) VALUES (?, ?, ?, ?, ?, ?)"
-    cursor.execute(command, (title, description, status, effort, startdate, assigned_stakeholder_id))
+    command = f"INSERT INTO tasks ({TASK_COLUMNS_STR}) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    cursor.execute(command, (title, description, status, effort, startdate, assigned_stakeholder_id, sort_key))
     return cursor.lastrowid
 
 def getTasks() -> List[sqlite3.Row]:
   with _getConnection() as conn:
-    command = f"SELECT id, {TASK_COLUMNS_STR} FROM tasks ORDER BY id"
+    command = f"SELECT id, {TASK_COLUMNS_STR} FROM tasks ORDER BY sort_key"
     return conn.execute(command).fetchall()
 
 def getTask(taskId: int) -> sqlite3.Row:
@@ -122,7 +146,7 @@ def addStakeholder(name: str, surname: str, email: str, type: str) -> int:
 
 def getStakeholders() -> List[sqlite3.Row]:
   with _getConnection() as conn:
-    command = f"SELECT id, {STAKEHOLDER_COLUMNS_STR} FROM stakeholders ORDER BY id"
+    command = f"SELECT id, {STAKEHOLDER_COLUMNS_STR} FROM stakeholders ORDER BY name, surname"
     return conn.execute(command).fetchall()
 
 def getStakeholder(stakeholderId: int) -> sqlite3.Row:
@@ -151,4 +175,55 @@ def updateStakeholder(stakeholderId: int, **kwargs):
     command = ", ".join([f"{key} = ?" for key in kwargs.keys()])
     command = f"UPDATE stakeholders SET {command} WHERE id = ?"
     conn.execute(command, (*list(kwargs.values()), stakeholderId))
+
+def calculateNewSortKey(position: int, tasks_in_status: List[sqlite3.Row] = None) -> float:
+  """Calculate new sort_key for fractional indexing"""
+  if tasks_in_status is None:
+    with _getConnection() as conn:
+      command = f"SELECT id, sort_key FROM tasks ORDER BY sort_key"
+      tasks_in_status = conn.execute(command).fetchall()
+  
+  if not tasks_in_status:
+    return 1.0
+  
+  if position <= 0:  # Insert at the beginning
+    first_sort_key = tasks_in_status[0]['sort_key']
+    return first_sort_key / 2
+  
+  if position >= len(tasks_in_status):  # Insert at the end
+    last_sort_key = tasks_in_status[-1]['sort_key']
+    return last_sort_key + 1
+  
+  # Insert between two tasks
+  prev_sort_key = tasks_in_status[position - 1]['sort_key']
+  next_sort_key = tasks_in_status[position]['sort_key']
+  return (prev_sort_key + next_sort_key) / 2
+
+def reorderTask(taskId: int, new_position: int, status: str = None):
+  """Reorder a task to a new position using fractional indexing"""
+  with _getConnection() as conn:
+    cursor = conn.cursor()
+    
+    # Get current task info
+    current_task = cursor.execute(f"SELECT id, {TASK_COLUMNS_STR} FROM tasks WHERE id = ?", (taskId,)).fetchone()
+    if not current_task:
+      print(f"Error: Task with id {taskId} not found")
+      return
+    
+    # If status is provided, update it first
+    if status and status != current_task['status']:
+      cursor.execute("UPDATE tasks SET status = ? WHERE id = ?", (status, taskId))
+      current_status = status
+    else:
+      current_status = current_task['status']
+    
+    # Get all tasks in the same status, excluding the current task
+    command = f"SELECT id, sort_key FROM tasks WHERE status = ? AND id != ? ORDER BY sort_key"
+    tasks_in_status = cursor.execute(command, (current_status, taskId)).fetchall()
+    
+    # Calculate new sort_key
+    new_sort_key = calculateNewSortKey(new_position, tasks_in_status)
+    
+    # Update the task's sort_key
+    cursor.execute("UPDATE tasks SET sort_key = ? WHERE id = ?", (new_sort_key, taskId))
 

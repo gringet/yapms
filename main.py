@@ -23,6 +23,8 @@ from src.core.app_state import appState
 
 if not os.path.exists(database.DB_FILE):
   database.createDummy()
+else:
+  database._migrateDatabase()
 
 def refresher():
   from src.views.tasks import build_kanban, build_task_list

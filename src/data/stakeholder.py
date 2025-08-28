@@ -76,7 +76,7 @@ class Stakeholder:
   def getAcronym(self) -> str:
     """Generate acronym: first letter of name + first two letters of surname"""
     if self.name == "Not" and self.surname == "Assigned":
-      return "NAS"
+      return "N/A"
     
     name_initial = self.name[0] if self.name else ""
     surname_initials = self.surname[:2] if len(self.surname) >= 2 else self.surname

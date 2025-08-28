@@ -19,7 +19,7 @@ def build(tasks: List[Task]):
   with ui.row().classes("w-full flex flex-nowrap"):
     for columnName in ["Backlog", "To Do", "In Progress", "Done"]:
       with Column(columnName):
-        column_tasks = [task for task in filtered_tasks if task.status == columnName]
+        column_tasks = sorted([task for task in filtered_tasks if task.status == columnName], key=lambda t: t.sort_key)
         for task in column_tasks:
           Card(task)
 
@@ -52,6 +52,7 @@ class Column(ui.column):
       self.classes(remove=self.highlighted, add=self.unhighlighted)
 
   def _onDrop(self) -> None:
+    from ...data import database
     draggedCard = appState.getDraggedCard()
     if draggedCard and not self == draggedCard.parent_slot.parent:
       # Check if task has start date for active statuses
@@ -61,8 +62,25 @@ class Column(ui.column):
         appState.setDraggedCard(None)
         return
       
-      draggedCard.parent_slot.parent.remove(draggedCard)
+      # Get current tasks in this column to determine position
+      current_tasks = [task for task in appState.tasksList if task.status == self.name and task.id != draggedCard.task.id]
+      current_tasks.sort(key=lambda t: t.sort_key)
+      
+      # For now, add to the end. Later we can implement more sophisticated positioning
+      new_position = len(current_tasks)
+      
+      # Use reorderTask to update sort_key and status
+      database.reorderTask(draggedCard.task.id, new_position, self.name)
+      
+      # Update the task object
       draggedCard.task.status = self.name
+      # Get updated sort_key from database
+      updated_task = database.getTask(draggedCard.task.id)
+      if updated_task:
+        draggedCard.task.sort_key = updated_task['sort_key']
+      
+      # Remove old card and create new one
+      draggedCard.parent_slot.parent.remove(draggedCard)
       with self:
         Card(draggedCard.task)
     self._onDragLeave()

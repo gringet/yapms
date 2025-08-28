@@ -10,7 +10,7 @@ tasks = ObservableList()
 
 @dataclass
 class Task:
-  def __init__(self, id: int, title: str, description: str="", status: str="Backlog", effort: int=1, startdate: str=None, assigned_stakeholder_id: int=None, onChange: Callable=None):
+  def __init__(self, id: int, title: str, description: str="", status: str="Backlog", effort: int=1, startdate: str=None, assigned_stakeholder_id: int=None, sort_key: float=None, onChange: Callable=None):
     self._id = id
     self._title = title
     self._description = description
@@ -18,11 +18,12 @@ class Task:
     self._effort = effort
     self._startdate = startdate
     self._assigned_stakeholder_id = assigned_stakeholder_id if assigned_stakeholder_id is not None else 1
+    self._sort_key = sort_key if sort_key is not None else float(id)
     self._onChange = onChange
 
   def dict(self):
     return {"id": self.id, "title": self.title, "description": self.description, "status": self.status,
-            "effort": self.effort, "startdate": self.startdate, "assigned_stakeholder_id": self.assigned_stakeholder_id}
+            "effort": self.effort, "startdate": self.startdate, "assigned_stakeholder_id": self.assigned_stakeholder_id, "sort_key": self.sort_key}
 
   @property
   def id(self):
@@ -84,6 +85,14 @@ class Task:
   def assigned_stakeholder_id(self, assigned_stakeholder_id: int):
     self._update_field("assigned_stakeholder_id", assigned_stakeholder_id, self._assigned_stakeholder_id)
 
+  @property
+  def sort_key(self):
+    return self._sort_key
+
+  @sort_key.setter
+  def sort_key(self, sort_key: float):
+    self._update_field("sort_key", sort_key, self._sort_key)
+
 
 def addUpdateTask(task: Task, title: str, description: str, effort: int, startdate: str, assigned_stakeholder_id: int = 1) -> bool:
   """Pure business logic for adding/updating tasks without UI dependencies"""
@@ -117,7 +126,7 @@ def addUpdateTask(task: Task, title: str, description: str, effort: int, startda
   if task is None:
     taskId = database.addTask(title, description, "Backlog", effort, startdate, assigned_stakeholder_id)
     if taskId:
-      tasks.append(Task(taskId, title, description, "Backlog", effort, startdate, assigned_stakeholder_id))
+      tasks.append(Task(taskId, title, description, "Backlog", effort, startdate, assigned_stakeholder_id, float(taskId)))
   else:
     task.title = title
     task.description = description

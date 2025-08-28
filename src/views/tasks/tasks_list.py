@@ -17,5 +17,6 @@ def build(tasks: List[Task]):
     {'name': 'effort', 'label': 'Effort', 'field': 'effort', 'sortable': True, 'align': 'left', 'classes': 'w-1/12'},
     {'name': 'startdate', 'label': 'Start Date', 'field': 'startdate', 'sortable': True, 'align': 'left', 'classes': 'w-2/12'},
   ]
-  task_data = [task.dict() for task in filtered_tasks]
+  sorted_tasks = sorted(filtered_tasks, key=lambda t: t.sort_key)
+  task_data = [task.dict() for task in sorted_tasks]
   ui.table(columns=columns, rows=task_data, row_key='id').classes(Table.DEFAULT).props(Table.PROPS)
