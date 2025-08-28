@@ -1,0 +1,1 @@
+from .stakeholder_view import build, addStakeholderDialog

@@ -10,7 +10,7 @@ tasks = ObservableList()
 
 @dataclass
 class Task:
-  def __init__(self, id: int, title: str, description: str="", status: str="To Do", duration: int=1, startdate: str=None, onChange: Callable=None):
+  def __init__(self, id: int, title: str, description: str="", status: str="Backlog", duration: int=1, startdate: str=None, onChange: Callable=None):
     self._id = id
     self._title = title
     self._description = description
@@ -96,9 +96,9 @@ def addUpdateTask(task: Task, title: str, description: str, duration: int, start
     return False, "Invalid date format"
     
   if task is None:
-    taskId = database.addTask(title, description, "To Do", duration, startdate)
+    taskId = database.addTask(title, description, "Backlog", duration, startdate)
     if taskId:
-      tasks.append(Task(taskId, title, description, "To Do", duration, startdate))
+      tasks.append(Task(taskId, title, description, "Backlog", duration, startdate))
   else:
     task.title = title
     task.description = description

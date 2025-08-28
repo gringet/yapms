@@ -1,1 +1,0 @@
-from .people_view import build, addStakeholderDialog

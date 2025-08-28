@@ -1,6 +1,7 @@
 from nicegui import ui
 from typing import List
 from ...data.stakeholder import Stakeholder
+from ...core.styles import Layout, Text, Input, Card, Kanban
 
 stakeholders: List[Stakeholder] = [
   Stakeholder("John", "Doe", "john.doe@company.com", "strategy"),
@@ -11,16 +12,16 @@ stakeholders: List[Stakeholder] = [
 
 
 def addStakeholderDialog():
-  with ui.dialog() as dialog, ui.card().style('min-width: 400px'):
-    ui.label('Add New Stakeholder').classes('text-h6 mb-4')
+  with ui.dialog() as dialog, ui.card().style(Layout.DIALOG_MIN_WIDTH):
+    ui.label('Add New Stakeholder').classes(Text.H6)
     
-    nameInput = ui.input('Name').props('outlined')
-    surnameInput = ui.input('Surname').props('outlined')
-    emailInput = ui.input('Email').props('outlined')
+    nameInput = ui.input('Name').props(Input.OUTLINED)
+    surnameInput = ui.input('Surname').props(Input.OUTLINED)
+    emailInput = ui.input('Email').props(Input.OUTLINED)
     typeSelect = ui.select(['strategy', 'subject matter expert', 'sponsor', 'executant'], 
-                           label='Type').props('outlined')
+                           label='Type').props(Input.OUTLINED)
     
-    with ui.row().classes('w-full justify-end'):
+    with ui.row().classes(Layout.ROW):
       ui.button('Cancel', on_click=dialog.close)
       
       def addStakeholder():
@@ -42,11 +43,11 @@ def addStakeholderDialog():
 
 @ui.refreshable
 def build():
-  with ui.column().classes('w-full p-4'):
+  with ui.column().classes(Layout.COLUMN):
     if not stakeholders:
-      ui.label('No stakeholders added yet.').classes('text-grey-6 text-center mt-8')
+      ui.label('No stakeholders added yet.').classes(Text.CENTER_GRAY)
     else:
-      with ui.grid(columns=3).classes('w-full gap-4'):
+      with ui.row().classes(Layout.GRID_4_RESPONSIVE):
         for stakeholder in stakeholders:
           createStakeholderCard(stakeholder)
 
@@ -61,12 +62,12 @@ def createStakeholderCard(stakeholder: Stakeholder):
   
   color = typeColors.get(stakeholder.type, 'grey')
   
-  with ui.card().classes('min-h-[160px] cursor-pointer hover:shadow-lg transition-shadow flex flex-col'):
-    ui.label(f'{stakeholder.name} {stakeholder.surname}').classes('text-h6 font-semibold')
+  with ui.card().classes(Card.STAKEHOLDER):
+    ui.label(f'{stakeholder.name} {stakeholder.surname}').classes(Text.H6_BOLD)
     ui.chip(stakeholder.type, color=color).props('size=sm').classes('-mt-2 flex-1')
     
-    with ui.row().classes('w-full justify-between items-end mt-0 p-0 pt-0'):
-      with ui.row().classes('items-center gap-1'):
-        ui.icon('email').classes('text-grey-6')
-        ui.label(stakeholder.email).classes('text-sm text-grey-8')
+    with ui.row().classes(Kanban.TASK_ROW):
+      with ui.row().classes(Kanban.TASK_ICON_ROW):
+        ui.icon('email').classes(Kanban.TASK_ICON)
+        ui.label(stakeholder.email).classes(Kanban.TASK_LABEL)
       ui.space()

@@ -4,6 +4,7 @@ import json
 from nicegui import ui
 
 from ...data import database
+from ...core.styles import Text, Layout
 
 @ui.refreshable
 def build():
@@ -13,8 +14,8 @@ def build():
     tasks = database.getTasks()
 
     if not tasks:
-        ui.label('No tasks to display.').classes('text-lg text-gray-500')
-        ui.label('Add some tasks in the Kanban board view.').classes('text-sm text-gray-400')
+        ui.label('No tasks to display.').classes(Text.LARGE_GRAY)
+        ui.label('Add some tasks in the Kanban board view.').classes(Text.SMALL_LIGHT_GRAY)
         return
 
     # --- Task Processing for Gantt Chart ---
@@ -48,7 +49,7 @@ def build():
     # --- UI and JavaScript Initialization ---
 
     # The container for the Gantt chart. Frappe-Gantt renders into an SVG element.
-    ui.html('<svg id="gantt-container"></svg>').classes('w-full h-[50vh] min-h-[25rem]')
+    ui.html('<svg id="gantt-container"></svg>').classes(Layout.GANTT_SVG)
 
     # Convert the Python list of tasks into a JSON string.
     tasks_json = json.dumps(gantt_tasks)

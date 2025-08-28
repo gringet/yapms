@@ -3,6 +3,7 @@ from typing import List
 from nicegui import ui
 
 from ...data.task import Task
+from ...core.styles import Table
 
 @ui.refreshable
 def build(tasks: List[Task]):
@@ -15,4 +16,4 @@ def build(tasks: List[Task]):
     {'name': 'startdate', 'label': 'Start Date', 'field': 'startdate', 'sortable': True, 'align': 'left', 'classes': 'w-2/12'},
   ]
   tasks = [task.dict() for task in tasks]
-  ui.table(columns=columns, rows=tasks, row_key='id').classes('w-full').props('flat bordered')
+  ui.table(columns=columns, rows=tasks, row_key='id').classes(Table.DEFAULT).props(Table.PROPS)

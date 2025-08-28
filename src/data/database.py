@@ -6,7 +6,7 @@ from typing import List
 DB_FILE = "db.db"
 TASK_COLUMNS = ["title", "description", "status", "duration", "startdate"]
 TASK_COLUMNS_STR = ", ".join(TASK_COLUMNS)
-VALID_STATUSES = ["To Do", "In Progress", "Done"]
+VALID_STATUSES = ["Backlog", "To Do", "In Progress", "Done"]
 
 def _getConnection() -> sqlite3.Connection:
   conn = sqlite3.connect(DB_FILE)

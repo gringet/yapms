@@ -15,9 +15,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 # Import modules from organized structure
 from src.data import database
 from src.data.task import Task, tasks
-from src.views.tasks.task_dialogs import addUpdateTaskDialog
+from src.views.tasks.dialogs import addUpdateTaskDialog
 from src.views.tasks import build_tasks as tasks_build
-from src.views.people import build as people_build, addStakeholderDialog
+from src.views.stakeholder import build as stakeholder_build, addStakeholderDialog
 from src.core.app_state import appState
 
 if not os.path.exists(database.DB_FILE):
@@ -44,7 +44,7 @@ with ui.header().classes(replace="row items-center bg-black text-white").style("
   def handleAddButton():
     if appState.currentView == "tasks":
       addUpdateTaskDialog()
-    elif appState.currentView == "people":
+    elif appState.currentView == "stakeholder":
       addStakeholderDialog()
   
   ui.button(icon="add", on_click=handleAddButton).classes("mr-3 text-black bg-white").props("round size=12px")
@@ -69,16 +69,16 @@ with ui.left_drawer().classes("bg-white border-r border-black") as leftDrawer:
       with appState.contentArea:
         tasks_build(appState.tasksList, appState.currentTab)
     
-    def showPeople():
-      appState.setView("people")
+    def showStakeholder():
+      appState.setView("stakeholder")
       appState.tabs.set_visibility(False)
       appState.contentArea.clear()  
       with appState.contentArea:
-        people_build()
+        stakeholder_build()
     
-    with ui.button(on_click=showPeople).classes("w-full justify-start pl-2").props("flat color=black"):
-      ui.icon("people").classes("mr-2")
-      ui.label("People")
+    with ui.button(on_click=showStakeholder).classes("w-full justify-start pl-2").props("flat color=black"):
+      ui.icon("group").classes("mr-2")
+      ui.label("Stakeholder")
     
     with ui.button(on_click=showTasks).classes("w-full justify-start pl-2").props("flat color=black"):
       ui.icon("task").classes("mr-2") 
