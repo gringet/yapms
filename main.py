@@ -51,7 +51,7 @@ appState.setTasksList(tasks)
 # Load stakeholders from database
 stakeholders.extend([Stakeholder(**dict(s), onChange=refresher) for s in database.getStakeholders()])
 
-ui.add_head_html('<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>')
+
 
 with ui.header().classes(replace="column bg-black text-white").style("min-height: 48px") as header:
   with ui.row().classes("w-full items-center flex-wrap").style("min-height: 48px"):

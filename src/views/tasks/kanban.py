@@ -93,10 +93,13 @@ class Card(ui.card):
     self.task = task
     
     with self.props("draggable").classes(CardStyles.DRAGGABLE):
-      ui.label(task.title).classes(Kanban.TASK_TITLE)
-      if task.description:
-        ui.label(task.description).classes(Kanban.TASK_DESCRIPTION)
+      # Content area (title + description) - takes available space
+      with ui.column().classes("flex-1 min-h-0"):
+        ui.label(task.title).classes(Kanban.TASK_TITLE)
+        if task.description:
+          ui.label(task.description).classes(Kanban.TASK_DESCRIPTION)
       
+      # Bottom row - always visible at bottom
       with ui.row().classes(Kanban.TASK_ROW + " items-center"):
         # Startdate and Effort together
         if task.startdate:

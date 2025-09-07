@@ -21,7 +21,7 @@ class Button:
 
 class Card:
   DEFAULT = 'bg-white border-2 border-black rounded-none shadow-none'
-  DRAGGABLE = 'w-full min-h-[120px] cursor-pointer hover:shadow-lg transition-shadow flex flex-col break-words p-3'
+  DRAGGABLE = 'w-full min-h-[120px] max-h-[120px] cursor-pointer hover:shadow-lg transition-shadow flex flex-col justify-between break-words p-3 overflow-hidden'
   DIALOG = 'bg-white border-2 border-black rounded-none shadow-none'
   STAKEHOLDER = 'min-h-[100px] cursor-pointer hover:shadow-lg transition-shadow flex flex-col flex-1 min-w-[250px] max-w-[calc(25%-1rem)] p-3'
 
@@ -41,10 +41,10 @@ class KanbanColumn:
 class Kanban:
   COLUMN_HEADER = 'text-bold ml-1 text-black font-bold uppercase tracking-wide sticky top-0 bg-white z-10 -mx-3 px-3 py-2 mb-2 break-words'
   TASK_TITLE = 'text-h6 font-semibold break-words'
-  TASK_DESCRIPTION = 'text-sm text-grey-8 -mt-2 flex-1 break-words line-clamp-2 min-h-[2.5rem]'
-  TASK_ROW = 'w-full justify-between items-end mt-0 p-0 pt-0'
-  TASK_ICON_ROW = 'items-center gap-1'
-  TASK_ICON = 'text-grey-6'
+  TASK_DESCRIPTION = 'text-sm text-grey-8 -mt-2 break-words line-clamp-2'
+  TASK_ROW = 'w-full justify-between items-end mt-0 p-0 pt-0 flex-shrink-0 overflow-hidden'
+  TASK_ICON_ROW = 'items-center gap-1 flex-shrink-0'
+  TASK_ICON = 'text-grey-6 flex-shrink-0'
   TASK_LABEL = 'text-sm text-grey-8 break-words'
 
 
@@ -58,7 +58,6 @@ class Layout:
   ROW_END = 'w-full justify-end mt-4'
   ROW_ITEMS_END = 'w-full items-end'
   GRID_4_RESPONSIVE = 'w-full flex flex-wrap gap-4'
-  GANTT_SVG = 'w-full h-[50vh] min-h-[25rem]'
 
 
 class Text:
@@ -90,5 +89,7 @@ def applyGlobalStyles():
 .kanban-column::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
 }
+
+
 </style>
 """)
