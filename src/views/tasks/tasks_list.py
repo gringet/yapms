@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List
 
 from nicegui import ui
@@ -7,7 +8,7 @@ from ...core.styles import Table
 from ...core.app_state import appState
 
 @ui.refreshable
-def build(tasks: List[Task]):
+def build(tasks: List[Task]) -> None:
   filtered_tasks = appState.filterTasks(tasks)
   columns = [
     {'name': 'id', 'label': 'ID', 'field': 'id', 'sortable': True, 'align': 'left', 'classes': 'w-1/12'},

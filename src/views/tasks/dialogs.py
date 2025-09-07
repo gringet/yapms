@@ -1,3 +1,4 @@
+from __future__ import annotations
 import datetime
 from nicegui import ui
 from ...data.task import Task, addUpdateTask
@@ -5,7 +6,7 @@ from ...data.stakeholder import stakeholders
 from ...core.styles import Card, Text, Layout, Button, Input
 
 
-def openDatePickerDialog(inputField: ui.input, currentValue=None):
+def openDatePickerDialog(inputField: ui.input, currentValue: str | None = None) -> None:
   """Opens a date picker dialog and updates the input field with the selected date"""
   with ui.dialog() as dateDialog, ui.card().classes(Card.DIALOG):
     ui.label("Select Date").classes(Text.DATE_LABEL)
@@ -19,7 +20,7 @@ def openDatePickerDialog(inputField: ui.input, currentValue=None):
   dateDialog.open()
 
 
-def addUpdateTaskDialog(task: Task=None):
+def addUpdateTaskDialog(task: Task | None = None) -> None:
   def _addUpdateTask(*args):
     success, message = addUpdateTask(*args)
     if success:

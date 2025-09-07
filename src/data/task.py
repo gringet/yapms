@@ -1,16 +1,17 @@
+from __future__ import annotations
 from dataclasses import dataclass
 import datetime
 from nicegui.observables import ObservableList
 from . import database
-from typing import Callable
+from typing import Callable, Dict, Any, Tuple, Optional
 
 
-tasks = ObservableList()
+tasks: ObservableList = ObservableList()
 
 
 @dataclass
 class Task:
-  def __init__(self, id: int, title: str, description: str="", status: str="Backlog", effort: int=1, startdate: str=None, assigned_stakeholder_id: int=None, sort_key: float=None, onChange: Callable=None):
+  def __init__(self, id: int, title: str, description: str = "", status: str = "Backlog", effort: int = 1, startdate: Optional[str] = None, assigned_stakeholder_id: Optional[int] = None, sort_key: Optional[float] = None, onChange: Callable | None = None) -> None:
     self._id = id
     self._title = title
     self._description = description
@@ -21,19 +22,19 @@ class Task:
     self._sort_key = sort_key if sort_key is not None else float(id)
     self._onChange = onChange
 
-  def dict(self):
+  def dict(self) -> Dict[str, Any]:
     return {"id": self.id, "title": self.title, "description": self.description, "status": self.status,
             "effort": self.effort, "startdate": self.startdate, "assigned_stakeholder_id": self.assigned_stakeholder_id, "sort_key": self.sort_key}
 
   @property
-  def id(self):
+  def id(self) -> int:
     return self._id
 
   @property
-  def title(self):
+  def title(self) -> str:
     return self._title
 
-  def _update_field(self, field_name: str, new_value, current_value):
+  def _update_field(self, field_name: str, new_value: Any, current_value: Any) -> None:
     if current_value == new_value:
       return
     database.updateTask(self._id, **{field_name: new_value})
@@ -42,59 +43,59 @@ class Task:
       self._onChange()
 
   @title.setter
-  def title(self, title: str):
+  def title(self, title: str) -> None:
     self._update_field("title", title, self._title)
 
   @property
-  def description(self):
+  def description(self) -> str:
     return self._description
 
   @description.setter
-  def description(self, description: str):
+  def description(self, description: str) -> None:
     self._update_field("description", description, self._description)
 
   @property
-  def status(self):
+  def status(self) -> str:
     return self._status
 
   @status.setter
-  def status(self, status: str):
+  def status(self, status: str) -> None:
     self._update_field("status", status, self._status)
 
   @property
-  def effort(self):
+  def effort(self) -> int:
     return self._effort
 
   @effort.setter
-  def effort(self, effort: int):
+  def effort(self, effort: int) -> None:
     self._update_field("effort", effort, self._effort)
 
   @property
-  def startdate(self):
+  def startdate(self) -> Optional[str]:
     return self._startdate
 
   @startdate.setter
-  def startdate(self, startdate: str):
+  def startdate(self, startdate: Optional[str]) -> None:
     self._update_field("startdate", startdate, self._startdate)
 
   @property
-  def assigned_stakeholder_id(self):
+  def assigned_stakeholder_id(self) -> int:
     return self._assigned_stakeholder_id
 
   @assigned_stakeholder_id.setter
-  def assigned_stakeholder_id(self, assigned_stakeholder_id: int):
+  def assigned_stakeholder_id(self, assigned_stakeholder_id: int) -> None:
     self._update_field("assigned_stakeholder_id", assigned_stakeholder_id, self._assigned_stakeholder_id)
 
   @property
-  def sort_key(self):
+  def sort_key(self) -> float:
     return self._sort_key
 
   @sort_key.setter
-  def sort_key(self, sort_key: float):
+  def sort_key(self, sort_key: float) -> None:
     self._update_field("sort_key", sort_key, self._sort_key)
 
 
-def addUpdateTask(task: Task, title: str, description: str, effort: int, startdate: str, assigned_stakeholder_id: int = 1) -> bool:
+def addUpdateTask(task: Task | None, title: str, description: str, effort: int, startdate: Optional[str], assigned_stakeholder_id: int = 1) -> tuple[bool, str]:
   """Pure business logic for adding/updating tasks without UI dependencies"""
   if not title.strip():
     return False, "Task title cannot be empty"

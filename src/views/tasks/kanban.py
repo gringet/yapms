@@ -10,11 +10,11 @@ from .dialogs import addUpdateTaskDialog
 from ...core.app_state import appState
 from ...core.styles import KanbanColumn, Kanban, Card as CardStyles, applyGlobalStyles
 
-applyGlobalStyles()
-
 
 @ui.refreshable
-def build(tasks: List[Task]):
+def build(tasks: List[Task]) -> None:
+  # Ensure global styles are applied once when building the view
+  applyGlobalStyles()
   filtered_tasks = appState.filterTasks(tasks)
   with ui.row().classes("w-full flex flex-nowrap"):
     for columnName in ["Backlog", "To Do", "In Progress", "Done"]:

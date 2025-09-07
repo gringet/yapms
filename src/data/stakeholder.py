@@ -1,15 +1,16 @@
+from __future__ import annotations
 from dataclasses import dataclass
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, Tuple
 from nicegui.observables import ObservableList
 from . import database
 
 
-stakeholders = ObservableList()
+stakeholders: ObservableList = ObservableList()
 
 
 @dataclass
 class Stakeholder:
-  def __init__(self, id: int, name: str, surname: str, email: str, type: str, onChange: Callable=None):
+  def __init__(self, id: int, name: str, surname: str, email: str, type: str, onChange: Callable | None = None) -> None:
     self._id = id
     self._name = name
     self._surname = surname
@@ -17,18 +18,18 @@ class Stakeholder:
     self._type = type
     self._onChange = onChange
 
-  def dict(self):
+  def dict(self) -> Dict[str, Any]:
     return {"id": self.id, "name": self.name, "surname": self.surname, "email": self.email, "type": self.type}
 
   @property
-  def id(self):
+  def id(self) -> int:
     return self._id
 
   @property
-  def name(self):
+  def name(self) -> str:
     return self._name
 
-  def _update_field(self, field_name: str, new_value, current_value):
+  def _update_field(self, field_name: str, new_value: Any, current_value: Any) -> None:
     if current_value == new_value:
       return
     database.updateStakeholder(self._id, **{field_name: new_value})
@@ -37,31 +38,31 @@ class Stakeholder:
       self._onChange()
 
   @name.setter
-  def name(self, name: str):
+  def name(self, name: str) -> None:
     self._update_field("name", name, self._name)
 
   @property
-  def surname(self):
+  def surname(self) -> str:
     return self._surname
 
   @surname.setter
-  def surname(self, surname: str):
+  def surname(self, surname: str) -> None:
     self._update_field("surname", surname, self._surname)
 
   @property
-  def email(self):
+  def email(self) -> str:
     return self._email
 
   @email.setter
-  def email(self, email: str):
+  def email(self, email: str) -> None:
     self._update_field("email", email, self._email)
 
   @property
-  def type(self):
+  def type(self) -> str:
     return self._type
 
   @type.setter
-  def type(self, type: str):
+  def type(self, type: str) -> None:
     self._update_field("type", type, self._type)
 
   def toDict(self) -> Dict[str, Any]:
@@ -83,7 +84,7 @@ class Stakeholder:
     return (name_initial + surname_initials).upper()
 
 
-def getStakeholderById(stakeholder_id: int) -> Stakeholder:
+def getStakeholderById(stakeholder_id: int) -> Stakeholder | None:
   """Get stakeholder by ID from the observable list"""
   for stakeholder in stakeholders:
     if stakeholder.id == stakeholder_id:
@@ -92,7 +93,7 @@ def getStakeholderById(stakeholder_id: int) -> Stakeholder:
   return stakeholders[0] if stakeholders else None
 
 
-def addUpdateStakeholder(stakeholder: Stakeholder, name: str, surname: str, email: str, type: str):
+def addUpdateStakeholder(stakeholder: Stakeholder | None, name: str, surname: str, email: str, type: str) -> tuple[bool, str]:
   """Add or update stakeholder in database"""
   try:
     if stakeholder is None:

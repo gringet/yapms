@@ -1,11 +1,12 @@
-from nicegui import ui
+from __future__ import annotations
 from typing import List
+from nicegui import ui
 from ...data.stakeholder import Stakeholder, addUpdateStakeholder, stakeholders
 from ...core.styles import Layout, Text, Input, Card, Kanban, Button
 from ...core.app_state import appState
 
 
-def addUpdateStakeholderDialog(stakeholder: Stakeholder = None):
+def addUpdateStakeholderDialog(stakeholder: Stakeholder | None = None) -> None:
   def _addUpdateStakeholder(*args):
     success, message = addUpdateStakeholder(*args)
     if success:
@@ -38,12 +39,12 @@ def addUpdateStakeholderDialog(stakeholder: Stakeholder = None):
   dialog.open()
 
 # Keep the old function name for backward compatibility
-def addStakeholderDialog():
+def addStakeholderDialog() -> None:
   addUpdateStakeholderDialog()
 
 
 @ui.refreshable
-def build():
+def build() -> None:
   with ui.column().classes(Layout.COLUMN):
     filtered_stakeholders = appState.filterStakeholders(stakeholders)
     
@@ -60,7 +61,7 @@ def build():
           createStakeholderCard(stakeholder)
 
 
-def createStakeholderCard(stakeholder: Stakeholder):
+def createStakeholderCard(stakeholder: Stakeholder) -> None:
   with ui.card().classes(Card.STAKEHOLDER).on('click', lambda: addUpdateStakeholderDialog(stakeholder)):
     ui.label(f'{stakeholder.name} {stakeholder.surname}').classes(Text.H6_BOLD).style('font-size: 1.2rem')
     ui.label(stakeholder.type).classes('-mt-2 flex-1').style('background-color: white; font-size: 1rem; color: black; padding: 2px 8px; display: inline-block; text-align: center; font-weight: 500;')
