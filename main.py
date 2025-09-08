@@ -6,10 +6,18 @@ Project Manager Application - Entry point
 from __future__ import annotations
 import os
 import sys
+try:
+  from dotenv import load_dotenv  # type: ignore
+except Exception:  # pragma: no cover
+  def load_dotenv(*args, **kwargs):
+    return False
 from nicegui import ui
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
+# Load environment from .env
+load_dotenv()
 
 # Imports from organized structure
 from src.data import database

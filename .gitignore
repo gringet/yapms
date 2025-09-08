@@ -3,3 +3,5 @@
 venv
 kanban.db
 db.db
+.env
+.env.*

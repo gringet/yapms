@@ -16,6 +16,7 @@ def build(tasks: Iterable[Task], currentTab: str = "Kanban") -> None:
       tasks.on_change(kanban_build.refresh)
     elif currentTab == "Gantt":
       gantt.build()
+      tasks.on_change(gantt.build.refresh)
     elif currentTab == "List":
       tasks_list.build(tasks)
       tasks.on_change(tasks_list.build.refresh)
