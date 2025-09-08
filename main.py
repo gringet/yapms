@@ -11,7 +11,10 @@ try:
 except Exception:  # pragma: no cover
   def load_dotenv(*args, **kwargs):
     return False
-from nicegui import ui
+from nicegui import ui, app
+import datetime as _dt
+from typing import Any, Dict
+from fastapi import HTTPException
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -140,3 +143,43 @@ with contentArea:
 
 
 ui.run()
+ 
+ 
+# --- API: Gantt updates ---
+@app.post('/api/gantt/update')
+async def api_gantt_update(payload: Dict[str, Any]):
+  """Update a task's start date and effort from Gantt drag/resize.
+  Expects JSON: {"id": int, "start": "YYYY-MM-DD", "end": "YYYY-MM-DD"}
+  """
+  try:
+    task_id = int(payload.get('id')) if payload.get('id') is not None else None
+    start = payload.get('start')
+    end = payload.get('end')
+    if task_id is None or not start or not end:
+      raise HTTPException(status_code=400, detail='Missing id/start/end')
+
+    # Parse dates and compute effort (at least 1 day)
+    y1, m1, d1 = [int(x) for x in start.split('-')]
+    y2, m2, d2 = [int(x) for x in end.split('-')]
+    start_date = _dt.date(y1, m1, d1)
+    end_date = _dt.date(y2, m2, d2)
+    effort = max((end_date - start_date).days, 1)
+
+    # Update task in memory; setters persist and trigger refresh
+    updated = False
+    if appState.tasksList:
+      for t in appState.tasksList:
+        if t.id == task_id:
+          t.startdate = start
+          t.effort = effort
+          updated = True
+          break
+    if not updated:
+      raise HTTPException(status_code=404, detail='Task not found')
+
+    return {'ok': True, 'id': task_id, 'start': start, 'effort': effort}
+  except HTTPException:
+    raise
+  except Exception as ex:
+    # Avoid leaking internals; provide generic error
+    raise HTTPException(status_code=400, detail=f'invalid payload: {ex}')

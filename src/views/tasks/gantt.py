@@ -111,7 +111,7 @@ def build() -> None:
     )
 
     # Initialize the chart (wait until Frappe Gantt is available),
-    # and only log to the browser console on date changes.
+    # and POST changes to the NiceGUI backend with console logging.
     ui.run_javascript(
       f"""
 (function() {{
@@ -133,7 +133,19 @@ def build() -> None:
               end: (end && end.toISOString ? end.toISOString().slice(0,10) : null)
             }};
             console.log('[Gantt] on_date_change', payload);
-          }} catch (e) {{ console.warn('[Gantt] log failed', e); }}
+            if (payload.id && payload.start && payload.end) {{
+              fetch('/api/gantt/update', {{
+                method: 'POST',
+                headers: {{ 'Content-Type': 'application/json' }},
+                body: JSON.stringify(payload)
+              }})
+              .then(function(r) {{ return r.json(); }})
+              .then(function(res) {{ console.log('[Gantt] backend ok', res); }})
+              .catch(function(err) {{ console.warn('[Gantt] backend error', err); }});
+            }} else {{
+              console.warn('[Gantt] invalid payload; not posting', payload);
+            }}
+          }} catch (e) {{ console.warn('[Gantt] on_date_change failed', e); }}
         }}
       }});
     }} catch (e) {{ console.error('[Gantt] init failed', e); }}
