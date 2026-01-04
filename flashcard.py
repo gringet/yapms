@@ -22,22 +22,24 @@ class FlashcardDetailsDialog(QDialog):
 
     layout = QVBoxLayout()
 
-    layout.addWidget(QLabel("<b>Title:</b>"))
+    layout.addWidget(QLabel("Title:"))
     self._title = QLineEdit(text=task.title)
     self._title.setText(task.title)
     layout.addWidget(self._title)
 
-    layout.addWidget(QLabel("<b>Description:</b>"))
+    layout.addWidget(QLabel("Description:"))
     self._description = QTextEdit()
     self._description.setPlainText(task.description)
     layout.addWidget(self._description)
 
     buttonLayout = QVBoxLayout()
     saveButton = QPushButton("Save")
+    saveButton.setAutoDefault(False)
     saveButton.clicked.connect(self.accept)
     buttonLayout.addWidget(saveButton)
 
     cancelButton = QPushButton("Cancel")
+    cancelButton.setAutoDefault(False)
     cancelButton.clicked.connect(self.reject)
     buttonLayout.addWidget(cancelButton)
 
@@ -55,19 +57,21 @@ class Flashcard(QWidget):
   def __init__(self, task: Task, parent: QWidget=None):
     self._task = task
     self._kanbanColumn = None
-    
+
     super().__init__(parent)
     self.setAttribute(Qt.WA_StyledBackground, True)
-    self.setFixedHeight(40)
+    self.setFixedHeight(60)
+
     self.setStyleSheet("""
       Flashcard {
-        background-color: white;
-        border: 2px solid #ccc;
-        border-radius: 6px;
+        border: 2px solid palette(text);
+        border-radius: 3pt;
       }
       Flashcard:hover {
-        background-color: #f0f0f0;
-        border: 2px solid #999;
+        border: 2px solid palette(highlight);
+      }
+      Flashcard[dragging="true"] {
+        border: 2px solid palette(highlight);
       }
     """)
 
@@ -75,7 +79,6 @@ class Flashcard(QWidget):
 
     titleLabel = QLabel(task.title)
     titleLabel.setWordWrap(True)
-    titleLabel.setStyleSheet("font-weight: bold;")
     layout.addWidget(titleLabel)
     task.titleChanged.connect(lambda: titleLabel.setText(task.title))
 
@@ -100,11 +103,17 @@ class Flashcard(QWidget):
     if (event.pos() - self._dragStartPos).manhattanLength() < 10:
       return
 
+    self.setProperty("dragging", "true")
+    self.style().polish(self)
+
     drag = QDrag(self)
     mimeData = QMimeData()
     mimeData.setProperty("flashcard", self)
     drag.setMimeData(mimeData)
     drag.exec(Qt.MoveAction)
+
+    self.setProperty("dragging", "false")
+    self.style().polish(self)
 
   def mouseDoubleClickEvent(self, event):
     dialog = FlashcardDetailsDialog(self._task, self)

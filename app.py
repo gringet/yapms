@@ -4,6 +4,7 @@ from main_window import MainWindow
 
 def main():
   app = QApplication(sys.argv)
+  app.setStyleSheet(open("style.css", "r").read())
 
   window = MainWindow()
   window.show()

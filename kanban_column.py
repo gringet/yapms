@@ -28,7 +28,7 @@ class KanbanColumn(QWidget):
 
     headerLayout = QVBoxLayout()
     titleLabel = QLabel(title)
-    titleLabel.setStyleSheet("font-size: 16px; font-weight: bold; padding: 0px;")
+    titleLabel.setStyleSheet("font-size: 13pt")
     headerLayout.addWidget(titleLabel)
 
     addButton = QPushButton("+ Add Task")
@@ -39,7 +39,6 @@ class KanbanColumn(QWidget):
 
     scrollArea = QScrollArea()
     scrollArea.setWidgetResizable(True)
-    scrollArea.setStyleSheet("QScrollArea { border: none; }")
 
     self._flashcardsWidget = QWidget()
     self._flashcardsLayout = QVBoxLayout()
@@ -50,14 +49,7 @@ class KanbanColumn(QWidget):
     scrollArea.setWidget(self._flashcardsWidget)
     layout.addWidget(scrollArea)
 
-    self.setAttribute(Qt.WA_StyledBackground, True)
     self.setLayout(layout)
-    self.setStyleSheet("""
-      KanbanColumn {
-        background-color: #f5f5f5;
-        border-radius: 8px;
-      }
-    """)
   
     self._loadFromStorage()
 
@@ -127,6 +119,9 @@ class KanbanColumn(QWidget):
       # Reordering
       if not dropIndex == currentIndex:
         self._flashcardsLayout.removeWidget(flashcard)
+        # special case to handle when reordering at the end of the list
+        if self._flashcardsLayout.count() == dropIndex:
+          dropIndex -= 1
         self._flashcardsLayout.insertWidget(dropIndex, flashcard)
     else:
       # Column switch
@@ -148,4 +143,4 @@ class KanbanColumn(QWidget):
       if dropPos.y() < flashcard.pos().y() + flashcard.height():
         return i
 
-    return nFlashcards - 1
+    return nFlashcards

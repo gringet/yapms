@@ -1,0 +1,12 @@
+QLineEdit:focus {
+  border: 1px solid palette(focus);
+}
+
+QTextEdit:focus {
+  border: 1px solid palette(focus);
+}
+
+QPushButton:hover {
+  border: 1px solid palette(highlight);
+}
+

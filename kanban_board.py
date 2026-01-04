@@ -8,8 +8,6 @@ class KanbanBoard(QWidget):
     super().__init__()
 
     mainLayout = QHBoxLayout()
-    mainLayout.setSpacing(0)
-    mainLayout.setContentsMargins(0, 0, 0, 0)
 
     self.todoColumn = KanbanColumn("todo", "To Do")
     mainLayout.addWidget(self.todoColumn)
