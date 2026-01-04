@@ -74,7 +74,7 @@ class KanbanColumn(QWidget):
 
   def addFlashcard(self, flashcard: Flashcard, position=None):
     if position is None:
-      position = self._flashcardsLayout.count() - 1
+      position = 0
     else:
       position = min(position, self._flashcardsLayout.count() - 1)
       position = max(0, position)

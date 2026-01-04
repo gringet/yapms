@@ -64,14 +64,13 @@ class Flashcard(QWidget):
 
     self.setStyleSheet("""
       Flashcard {
-        border: 2px solid palette(text);
-        border-radius: 3pt;
+        border: 1px solid palette(text);
       }
       Flashcard:hover {
-        border: 2px solid palette(highlight);
+        border: 1px solid palette(highlight);
       }
       Flashcard[dragging="true"] {
-        border: 2px solid palette(highlight);
+        border: 1px solid palette(highlight);
       }
     """)
 

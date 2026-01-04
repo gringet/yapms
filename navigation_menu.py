@@ -18,27 +18,19 @@ class MenuButton(QPushButton):
     if self.isActive:
       self.setStyleSheet("""
         MenuButton {
-          background-color: #4CAF50;
-          color: white;
-          border: none;
-          border-radius: 8px;
           font-size: 24px;
-        }
-        MenuButton:hover {
-          background-color: #45a049;
+          border-radius: 3px;
+          border: 1px solid palette(highlight);
         }
       """)
     else:
       self.setStyleSheet("""
         MenuButton {
-          background-color: #e0e0e0;
-          color: #666;
-          border: none;
-          border-radius: 8px;
           font-size: 24px;
+          border-radius: 3px;
         }
         MenuButton:hover {
-          background-color: #d0d0d0;
+          border: 1px solid palette(hover);
         }
       """)
 
@@ -59,7 +51,6 @@ class NavigationMenu(QWidget):
     self.setAttribute(Qt.WA_StyledBackground, True)
     self.setStyleSheet("""
       NavigationMenu {
-        background-color: #2c3e50;
         padding: 10px;
       }
     """)
