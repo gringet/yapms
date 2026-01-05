@@ -9,12 +9,12 @@ class Task(QObject):
   titleChanged = Signal(str)
   descriptionChanged = Signal(str)
 
-  def __init__(self, title: str, description: str, taskId: str=None):
+  def __init__(self, title: str, description: str, id: str=None):
     super().__init__()
-    if taskId is None:
+    if id is None:
       self._id = str(uuid.uuid4())
     else:
-      self._id = taskId
+      self._id = id
     self._title = title
     self._description = description
 
@@ -42,19 +42,3 @@ class Task(QObject):
     self.descriptionChanged.emit(value)
     getDataStorage().editTask(self)
 
-
-# class TaskManager(QObject):
-#   taskAdded = Signal(Task)
-#   taskUpdated = Signal(Task)
-
-#   def __init__(self):
-#     super().__init__()
-#     self._tasks: List[Task] = list()
-
-#   def addTask(self, task: Task):
-#     self._tasks.append(task)
-#     task.titleChanged.connect(lambda: self.taskUpdated.emit(task))
-#     task.descriptionChanged.connect(lambda: self.taskUpdated.emit(task))
-
-#   def getTask(self):
-#     return self._tasks

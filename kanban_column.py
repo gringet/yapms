@@ -66,9 +66,7 @@ class KanbanColumn(QWidget):
     ordering = storage.kanban[self._columnId]
 
     for taskId in ordering[::-1]:
-      task = tasks[taskId]
-      task = Task(task["title"], task["description"], task["id"])
-      flashcard = Flashcard(task)
+      flashcard = Flashcard(tasks[taskId])
       self._flashcardsLayout.insertWidget(0, flashcard)
       flashcard.kanbanColumn = self
 

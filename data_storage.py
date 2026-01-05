@@ -52,20 +52,13 @@ class DataStorage:
     self._conn.commit()
   
   @property
-  def tasks(self) -> Dict[str, Dict[str, str]]:
+  def tasks(self) -> Dict[str, Dict[str, 'Task']]:
     """Retrieve all tasks as a dictionary."""
+    from task import Task
+
     cursor = self._conn.cursor()
     cursor.execute('SELECT id, title, description FROM tasks')
-    
-    tasks_dict = {}
-    for row in cursor.fetchall():
-      tasks_dict[row['id']] = {
-        'id': row['id'],
-        'title': row['title'],
-        'description': row['description']
-      }
-    
-    return tasks_dict
+    return {row["id"]: Task(**row) for row in cursor.fetchall()}
 
   @property
   def kanban(self) -> Dict[str, List[str]]:
@@ -73,11 +66,11 @@ class DataStorage:
     cursor = self._conn.cursor()
     cursor.execute('SELECT column_id, ordering FROM kanban')
     
-    kanban_dict = {}
+    kanban = {}
     for row in cursor.fetchall():
-      kanban_dict[row['column_id']] = json.loads(row['ordering'])
+      kanban[row['column_id']] = json.loads(row['ordering'])
     
-    return kanban_dict
+    return kanban
 
   def addTask(self, task: 'Task'):
     """Add a new task to the database."""
@@ -105,18 +98,6 @@ class DataStorage:
       (json.dumps(ordering), columnId)
     )
     self._conn.commit()
-
-  def save(self) -> bool:
-    """
-    Save changes to the database.
-    Note: With SQLite, changes are committed immediately in each method,
-    so this method is kept for API compatibility but doesn't do anything.
-    """
-    try:
-      self._conn.commit()
-      return True
-    except Exception:
-      return False
   
   def close(self):
     """Close the database connection."""
