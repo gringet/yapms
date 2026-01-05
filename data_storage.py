@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 
-import os
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List
 import sqlite3
 import json
 
@@ -9,7 +8,7 @@ if TYPE_CHECKING:
   from task import Task
 
 
-class DataStorage:
+class _DataStorage:
   def __init__(self, filePath: str=".data.db"):
     self._filePath = filePath
     self._conn = None
@@ -99,7 +98,7 @@ class DataStorage:
     )
     self._conn.commit()
   
-  def close(self):
+  def _close(self):
     """Close the database connection."""
     if self._conn:
       self._conn.close()
@@ -107,14 +106,14 @@ class DataStorage:
   
   def __del__(self):
     """Ensure connection is closed when object is destroyed."""
-    self.close()
+    self._close()
 
 
 _storageInstance = None
 
 
-def getDataStorage(filePath: str=".data.db") -> DataStorage:
+def getDataStorage(filePath: str=".data.db") -> _DataStorage:
   global _storageInstance
   if _storageInstance is None:
-    _storageInstance = DataStorage(filePath)
+    _storageInstance = _DataStorage(filePath)
   return _storageInstance
