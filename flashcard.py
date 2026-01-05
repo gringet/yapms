@@ -84,11 +84,11 @@ class Flashcard(QWidget):
     self.setLayout(layout)
   
   @property
-  def kanbanColumn(self) -> KanbanColumn:
+  def kanbanColumn(self) -> 'KanbanColumn':
     return self._kanbanColumn
   
   @kanbanColumn.setter
-  def kanbanColumn(self, column: KanbanColumn):
+  def kanbanColumn(self, column: 'KanbanColumn'):
     self._kanbanColumn = column
 
   def mousePressEvent(self, event):
