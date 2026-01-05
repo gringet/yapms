@@ -1,8 +1,11 @@
+from typing import TYPE_CHECKING
+
 import pickle
 import os
 from typing import Any, Dict, List, Tuple
 
-from task import Task
+if TYPE_CHECKING:
+  from task import Task
 
 
 class DataStorage:
@@ -39,6 +42,15 @@ class DataStorage:
       "description": task.description
     }
     self.save()
+
+  def editTask(self, task: Task):
+    if task.id in self._data["tasks"]:
+      self._data["tasks"][task.id] = {
+        "id": task.id,
+        "title": task.title,
+        "description": task.description
+      }
+      self.save()
 
   def reorderKanban(self, columnId: str, ordering: List[str]):
     self._data["kanban"][columnId] = ordering

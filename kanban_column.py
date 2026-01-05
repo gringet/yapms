@@ -123,10 +123,12 @@ class KanbanColumn(QWidget):
         if self._flashcardsLayout.count() == dropIndex:
           dropIndex -= 1
         self._flashcardsLayout.insertWidget(dropIndex, flashcard)
+        self.handleReordering()
     else:
       # Column switch
       flashcard.kanbanColumn.removeFlashcard(flashcard)
       self.addFlashcard(flashcard, dropIndex)
+      self.handleReordering()
 
     event.acceptProposedAction()
 

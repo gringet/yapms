@@ -1,7 +1,8 @@
 import uuid
-from typing import List
 
 from PySide6.QtCore import QObject, Signal
+
+from data_storage import getDataStorage
 
 
 class Task(QObject):
@@ -29,6 +30,7 @@ class Task(QObject):
   def title(self, value: str):
     self._title = value
     self.titleChanged.emit(value)
+    getDataStorage().editTask(self)
 
   @property
   def description(self) -> str:
@@ -38,6 +40,7 @@ class Task(QObject):
   def description(self, value: str):
     self._description = value
     self.descriptionChanged.emit(value)
+    getDataStorage().editTask(self)
 
 
 # class TaskManager(QObject):
