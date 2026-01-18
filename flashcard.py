@@ -1,20 +1,20 @@
 from typing import TYPE_CHECKING
 
-from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QDialog, QTextEdit, QPushButton, QLineEdit
-from PySide6.QtCore import Qt, QMimeData
+from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QDialog, QTextEdit, QPushButton, QLineEdit, QMenu
+from PySide6.QtCore import Qt, QMimeData, Signal
 from PySide6.QtGui import QDrag
-
-from task import Task
 
 if TYPE_CHECKING:
   from kanban_column import KanbanColumn
+
+from task import Task
 
 
 class FlashcardDetailsDialog(QDialog):
 
   def __init__(self, task: Task, parent: QWidget=None):
     self._task = task
-    
+
     super().__init__(parent)
     self.setWindowTitle("Task Details")
     self.setModal(True)
@@ -23,13 +23,13 @@ class FlashcardDetailsDialog(QDialog):
     layout = QVBoxLayout()
 
     layout.addWidget(QLabel("Title:"))
-    self._title = QLineEdit(text=task.title)
-    self._title.setText(task.title)
+    self._title = QLineEdit(text=self._task.title)
+    self._title.setText(self._task.title)
     layout.addWidget(self._title)
 
     layout.addWidget(QLabel("Description:"))
     self._description = QTextEdit()
-    self._description.setPlainText(task.description)
+    self._description.setPlainText(self._task.description)
     layout.addWidget(self._description)
 
     buttonLayout = QVBoxLayout()
@@ -53,12 +53,14 @@ class FlashcardDetailsDialog(QDialog):
 
 
 class Flashcard(QWidget):
+  deletionRequested = Signal(str)  # Emits task ID
 
   def __init__(self, task: Task, parent: QWidget=None):
+    super().__init__(parent)
+
     self._task = task
     self._kanbanColumn = None
 
-    super().__init__(parent)
     self.setAttribute(Qt.WA_StyledBackground, True)
     self.setFixedHeight(60)
 
@@ -76,10 +78,10 @@ class Flashcard(QWidget):
 
     layout = QVBoxLayout()
 
-    titleLabel = QLabel(task.title)
+    titleLabel = QLabel(self._task.title)
     titleLabel.setWordWrap(True)
     layout.addWidget(titleLabel)
-    task.titleChanged.connect(lambda: titleLabel.setText(task.title))
+    self._task.titleChanged.connect(lambda: titleLabel.setText(self._task.title))
 
     self.setLayout(layout)
   
@@ -117,6 +119,26 @@ class Flashcard(QWidget):
   def mouseDoubleClickEvent(self, event):
     dialog = FlashcardDetailsDialog(self._task, self)
     dialog.exec()
+
+  def contextMenuEvent(self, event):
+    contextMenu = QMenu(self)
+
+    editAction = contextMenu.addAction("Edit Task")
+    deleteAction = contextMenu.addAction("Delete Task")
+
+    action = contextMenu.exec(event.globalPos())
+
+    if action == editAction:
+      self._handleEdit()
+    elif action == deleteAction:
+      self._handleDelete()
+
+  def _handleEdit(self):
+    dialog = FlashcardDetailsDialog(self._task, self)
+    dialog.exec()
+
+  def _handleDelete(self):
+    self.deletionRequested.emit(self._task.id)
 
   @property
   def taskId(self):

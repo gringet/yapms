@@ -1,25 +1,26 @@
-from typing import List
+from typing import List, Dict
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QScrollArea, QDialog, QLineEdit, QTextEdit
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QScrollArea
 from PySide6.QtCore import Qt, Signal
 
-from flashcard import Flashcard, FlashcardDetailsDialog
+from flashcard import Flashcard
 from task import Task
-
 from data_storage import getDataStorage
 
 class KanbanColumn(QWidget):
-  taskCreated = Signal(Task)
+  taskCreationRequested = Signal()  # Request to create a new task
+  taskCreated = Signal(str)  # Notify that a task was created (emit task ID)
+  taskDeletionRequested = Signal(str)  # Request deletion of a task (emit task ID)
   flashcardsReordered = Signal(str, list)
 
   def __init__(self, columnId: str, title: str, parent=None):
     super().__init__(parent)
 
     storage = getDataStorage()
-    self.taskCreated.connect(storage.addTask)
     self.flashcardsReordered.connect(storage.reorderKanban)
 
     self._columnId = columnId
+    self._tasks: Dict[str, Task] = {}
 
     self.setAcceptDrops(True)
     self.setMinimumWidth(300)
@@ -50,25 +51,36 @@ class KanbanColumn(QWidget):
     layout.addWidget(scrollArea)
 
     self.setLayout(layout)
-  
-    self._loadFromStorage()
 
   def _handleAddTask(self):
-    task = Task("", "")
-    dialog = FlashcardDetailsDialog(task, self)
-    if dialog.exec() == QDialog.Accepted:
-      self.taskCreated.emit(task)
-      self.addFlashcard(Flashcard(task))
+    self.taskCreationRequested.emit()
 
-  def _loadFromStorage(self):
+  def addTask(self, task: Task):
+    """Add a task to this column's internal registry."""
+    self._tasks[task.id] = task
+
+  def createFlashcardForTask(self, task: Task):
+    """Create and add a flashcard for the given task."""
+    flashcard = Flashcard(task)
+    flashcard.deletionRequested.connect(self.taskDeletionRequested)
+    self.addFlashcard(flashcard)
+
+  def loadTasksFromStorage(self, tasks: Dict[str, Task]):
+    """Load tasks into the column from storage."""
     storage = getDataStorage()
-    tasks = storage.tasks
     ordering = storage.kanban[self._columnId]
 
+    # Store task references
+    for task in tasks.values():
+      self._tasks[task.id] = task
+
+    # Create flashcards in order
     for taskId in ordering[::-1]:
-      flashcard = Flashcard(tasks[taskId])
-      self._flashcardsLayout.insertWidget(0, flashcard)
-      flashcard.kanbanColumn = self
+      if taskId in self._tasks:
+        flashcard = Flashcard(self._tasks[taskId])
+        flashcard.deletionRequested.connect(self.taskDeletionRequested)
+        self._flashcardsLayout.insertWidget(0, flashcard)
+        flashcard.kanbanColumn = self
 
   def addFlashcard(self, flashcard: Flashcard, position=None):
     if position is None:
@@ -137,10 +149,24 @@ class KanbanColumn(QWidget):
 
     pos = event.pos()
     dropPos = self._flashcardsWidget.mapFrom(self, pos)
-  
+
     for i in range(nFlashcards):
       flashcard = self._flashcardsLayout.itemAt(i).widget()
       if dropPos.y() < flashcard.pos().y() + flashcard.height():
         return i
 
     return nFlashcards
+
+  def handleTaskDeletion(self, taskId: str):
+    """Remove the flashcard for the given task ID."""
+    # Remove from internal registry
+    if taskId in self._tasks:
+      del self._tasks[taskId]
+
+    # Find and remove the flashcard widget
+    for i in range(self._flashcardsLayout.count() - 1):
+      flashcard = self._flashcardsLayout.itemAt(i).widget()
+      if flashcard.taskId == taskId:
+        self.removeFlashcard(flashcard)
+        flashcard.deleteLater()
+        break

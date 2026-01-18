@@ -89,6 +89,12 @@ class _DataStorage:
     )
     self._conn.commit()
 
+  def deleteTask(self, taskId: str):
+    """Delete a task from the database."""
+    cursor = self._conn.cursor()
+    cursor.execute('DELETE FROM tasks WHERE id = ?', (taskId,))
+    self._conn.commit()
+
   def reorderKanban(self, columnId: str, ordering: List[str]):
     """Update the ordering of tasks in a kanban column."""
     cursor = self._conn.cursor()
