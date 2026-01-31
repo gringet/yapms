@@ -15,9 +15,9 @@ class _TaskManager(QObject):
     super().__init__()
     self._tasks: Dict[str, Task] = {}
 
-  def createTask(self, title: str, description: str) -> Task:
+  def createTask(self, title: str, description: str, status: str="todo") -> Task:
     """Create a new task and register it with the manager."""
-    task = Task(title, description)
+    task = Task(title, description, status=status)
     self._tasks[task.id] = task
     self.taskCreated.emit(task.id)
     return task

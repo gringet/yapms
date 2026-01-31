@@ -1,23 +1,18 @@
-from typing import List, Dict
+from typing import Dict
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QScrollArea
 from PySide6.QtCore import Qt, Signal
 
 from flashcard import Flashcard
 from task import Task
-from data_storage import getDataStorage
 
 class KanbanColumn(QWidget):
   taskCreationRequested = Signal()  # Request to create a new task
   taskCreated = Signal(str)  # Notify that a task was created (emit task ID)
   taskDeletionRequested = Signal(str)  # Request deletion of a task (emit task ID)
-  flashcardsReordered = Signal(str, list)
 
   def __init__(self, columnId: str, title: str, parent=None):
     super().__init__(parent)
-
-    storage = getDataStorage()
-    self.flashcardsReordered.connect(storage.reorderKanban)
 
     self._columnId = columnId
     self._tasks: Dict[str, Task] = {}
@@ -61,26 +56,29 @@ class KanbanColumn(QWidget):
 
   def createFlashcardForTask(self, task: Task):
     """Create and add a flashcard for the given task."""
+    # Set ordering to add at the top (position 0)
+    task.ordering = 0
     flashcard = Flashcard(task)
     flashcard.deletionRequested.connect(self.taskDeletionRequested)
     self.addFlashcard(flashcard)
+    # Update ordering for all existing tasks
+    self.updateTaskOrdering()
 
   def loadTasksFromStorage(self, tasks: Dict[str, Task]):
-    """Load tasks into the column from storage."""
-    storage = getDataStorage()
-    ordering = storage.kanban[self._columnId]
+    """Load tasks into the column that match this column's status."""
+    # Filter tasks that belong to this column
+    columnTasks = [task for task in tasks.values() if task.status == self._columnId]
 
-    # Store task references
-    for task in tasks.values():
-      self._tasks[task.id] = task
+    # Sort by ordering
+    columnTasks.sort(key=lambda t: t.ordering)
 
     # Create flashcards in order
-    for taskId in ordering[::-1]:
-      if taskId in self._tasks:
-        flashcard = Flashcard(self._tasks[taskId])
-        flashcard.deletionRequested.connect(self.taskDeletionRequested)
-        self._flashcardsLayout.insertWidget(0, flashcard)
-        flashcard.kanbanColumn = self
+    for task in columnTasks:
+      self._tasks[task.id] = task
+      flashcard = Flashcard(task)
+      flashcard.deletionRequested.connect(self.taskDeletionRequested)
+      self._flashcardsLayout.insertWidget(self._flashcardsLayout.count() - 1, flashcard)
+      flashcard.kanbanColumn = self
 
   def addFlashcard(self, flashcard: Flashcard, position=None):
     if position is None:
@@ -91,22 +89,24 @@ class KanbanColumn(QWidget):
 
     self._flashcardsLayout.insertWidget(position, flashcard)
     flashcard.kanbanColumn = self
-    self.handleReordering()
+
+    # Update task status when flashcard is added to this column
+    task = self._tasks.get(flashcard.taskId)
+    if task and task.status != self._columnId:
+      task.status = self._columnId
 
   def removeFlashcard(self, flashcard: Flashcard):
     self._flashcardsLayout.removeWidget(flashcard)
     flashcard.setParent(None)
     flashcard.kanbanColumn = None
-    self.handleReordering()
-  
-  def handleReordering(self):
-    ordering = list()
-  
+
+  def updateTaskOrdering(self):
+    """Update the ordering field for all tasks in this column based on their position."""
     for i in range(self._flashcardsLayout.count() - 1):
-      flashcard: Flashcard = self._flashcardsLayout.itemAt(i).widget()
-      ordering.append(flashcard.taskId)
-    
-    self.flashcardsReordered.emit(self._columnId, ordering)
+      flashcard = self._flashcardsLayout.itemAt(i).widget()
+      task = self._tasks.get(flashcard.taskId)
+      if task:
+        task.ordering = i
 
   def dragEnterEvent(self, event):
     if event.mimeData().property("flashcard") is not None:
@@ -118,7 +118,7 @@ class KanbanColumn(QWidget):
 
   def dropEvent(self, event):
     flashcard: Flashcard = event.mimeData().property("flashcard")
-    
+
     if flashcard is None:
       return
 
@@ -126,19 +126,37 @@ class KanbanColumn(QWidget):
     currentIndex = self._flashcardsLayout.indexOf(flashcard)
 
     if currentIndex >= 0:
-      # Reordering
+      # Reordering within same column
       if not dropIndex == currentIndex:
         self._flashcardsLayout.removeWidget(flashcard)
         # special case to handle when reordering at the end of the list
         if self._flashcardsLayout.count() == dropIndex:
           dropIndex -= 1
         self._flashcardsLayout.insertWidget(dropIndex, flashcard)
-        self.handleReordering()
+        # Update ordering for all tasks in this column
+        self.updateTaskOrdering()
     else:
-      # Column switch
-      flashcard.kanbanColumn.removeFlashcard(flashcard)
+      # Moving to different column
+      oldColumn = flashcard.kanbanColumn
+
+      # Get the task before removing from old column
+      task = oldColumn._tasks.get(flashcard.taskId)
+
+      # Remove from old column
+      oldColumn.removeFlashcard(flashcard)
+      if flashcard.taskId in oldColumn._tasks:
+        del oldColumn._tasks[flashcard.taskId]
+
+      # Update ordering in old column
+      oldColumn.updateTaskOrdering()
+
+      # Add to this column
+      if task:
+        self._tasks[task.id] = task
       self.addFlashcard(flashcard, dropIndex)
-      self.handleReordering()
+
+      # Update ordering in new column
+      self.updateTaskOrdering()
 
     event.acceptProposedAction()
 

@@ -1,8 +1,5 @@
-from typing import TYPE_CHECKING
-
-from typing import Dict, List
+from typing import TYPE_CHECKING, Dict
 import sqlite3
-import json
 
 if TYPE_CHECKING:
   from task import Task
@@ -18,37 +15,48 @@ class _DataStorage:
     """Initialize the database connection and create tables if they don't exist."""
     self._conn = sqlite3.connect(self._filePath, check_same_thread=False)
     self._conn.row_factory = sqlite3.Row
-    
+
     cursor = self._conn.cursor()
 
     cursor.execute('''
       CREATE TABLE IF NOT EXISTS tasks (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
-        description TEXT
+        description TEXT,
+        status TEXT DEFAULT 'todo',
+        ordering INTEGER DEFAULT 0
       )
     ''')
 
-    cursor.execute('''
-      CREATE TABLE IF NOT EXISTS kanban (
-        column_id TEXT PRIMARY KEY,
-        ordering TEXT NOT NULL
-      )
-    ''')
-
-    cursor.execute('SELECT COUNT(*) FROM kanban')
-    if cursor.fetchone()[0] == 0:
-      default_columns = [
-        ('todo', json.dumps([])),
-        ('in_progress', json.dumps([])),
-        ('done', json.dumps([]))
-      ]
-      cursor.executemany(
-        'INSERT INTO kanban (column_id, ordering) VALUES (?, ?)',
-        default_columns
-      )
-    
     self._conn.commit()
+    self._runMigrations()
+
+  def _runMigrations(self):
+    """Run database migrations to update schema."""
+    cursor = self._conn.cursor()
+
+    # Check existing columns
+    cursor.execute("PRAGMA table_info(tasks)")
+    columns = [column[1] for column in cursor.fetchall()]
+
+    if 'status' not in columns:
+      # Migration: Add status column to existing tasks table
+      cursor.execute('ALTER TABLE tasks ADD COLUMN status TEXT DEFAULT "todo"')
+      self._conn.commit()
+      print("Migration: Added 'status' column to tasks table")
+
+    if 'ordering' not in columns:
+      # Migration: Add ordering column to existing tasks table
+      cursor.execute('ALTER TABLE tasks ADD COLUMN ordering INTEGER DEFAULT 0')
+      self._conn.commit()
+      print("Migration: Added 'ordering' column to tasks table")
+
+    # Migration: Remove kanban table if it exists
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='kanban'")
+    if cursor.fetchone():
+      cursor.execute('DROP TABLE kanban')
+      self._conn.commit()
+      print("Migration: Removed 'kanban' table")
   
   @property
   def tasks(self) -> Dict[str, Dict[str, 'Task']]:
@@ -56,27 +64,15 @@ class _DataStorage:
     from task import Task
 
     cursor = self._conn.cursor()
-    cursor.execute('SELECT id, title, description FROM tasks')
-    return {row["id"]: Task(**row) for row in cursor.fetchall()}
-
-  @property
-  def kanban(self) -> Dict[str, List[str]]:
-    """Retrieve kanban column orderings as a dictionary."""
-    cursor = self._conn.cursor()
-    cursor.execute('SELECT column_id, ordering FROM kanban')
-    
-    kanban = {}
-    for row in cursor.fetchall():
-      kanban[row['column_id']] = json.loads(row['ordering'])
-    
-    return kanban
+    cursor.execute('SELECT id, title, description, status, ordering FROM tasks ORDER BY status, ordering')
+    return {row["id"]: Task(**dict(row)) for row in cursor.fetchall()}
 
   def addTask(self, task: 'Task'):
     """Add a new task to the database."""
     cursor = self._conn.cursor()
     cursor.execute(
-      'INSERT OR REPLACE INTO tasks (id, title, description) VALUES (?, ?, ?)',
-      (task.id, task.title, task.description)
+      'INSERT OR REPLACE INTO tasks (id, title, description, status, ordering) VALUES (?, ?, ?, ?, ?)',
+      (task.id, task.title, task.description, task.status, task.ordering)
     )
     self._conn.commit()
 
@@ -84,8 +80,8 @@ class _DataStorage:
     """Edit an existing task in the database."""
     cursor = self._conn.cursor()
     cursor.execute(
-      'UPDATE tasks SET title = ?, description = ? WHERE id = ?',
-      (task.title, task.description, task.id)
+      'UPDATE tasks SET title = ?, description = ?, status = ?, ordering = ? WHERE id = ?',
+      (task.title, task.description, task.status, task.ordering, task.id)
     )
     self._conn.commit()
 
@@ -93,15 +89,6 @@ class _DataStorage:
     """Delete a task from the database."""
     cursor = self._conn.cursor()
     cursor.execute('DELETE FROM tasks WHERE id = ?', (taskId,))
-    self._conn.commit()
-
-  def reorderKanban(self, columnId: str, ordering: List[str]):
-    """Update the ordering of tasks in a kanban column."""
-    cursor = self._conn.cursor()
-    cursor.execute(
-      'UPDATE kanban SET ordering = ? WHERE column_id = ?',
-      (json.dumps(ordering), columnId)
-    )
     self._conn.commit()
   
   def _close(self):

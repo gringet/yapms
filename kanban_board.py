@@ -60,7 +60,8 @@ class KanbanBoard(QWidget):
 
   def _handleTaskCreationRequest(self, column: KanbanColumn):
     """Handle a request to create a new task in a specific column."""
-    task = self._taskManager.createTask("", "")
+    # Create task with the column's status
+    task = self._taskManager.createTask("", "", status=column._columnId)
     dialog = FlashcardDetailsDialog(task, self)
     if dialog.exec() == QDialog.Accepted:
       # Save to storage
